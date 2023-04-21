@@ -42,41 +42,10 @@ class Board:
 
         # Create grid for the playing of the game
         self.playable_grid = pd.DataFrame([[0 for x in range(8)] for y in range(8)],
-                                          columns=column_names)
+                                          columns=column_names,
+                                          dtype=object)
         # Shift index to start at 1
         self.playable_grid.index = self.playable_grid.index + 1
-
-    def place_piece(self, type_of_piece, coordinate):
-        '''
-        This will place a piece on the board
-
-        **Parameters**
-            coordinate: *tuple*
-                A tuple holding a square on the board this
-                piece will be placed
-
-        **Returns**
-            None
-        '''
-        # Place a piece on the board depending on the type
-        # If a king place a 1
-        if type_of_piece == "king":
-            self.playable_grid[coordinate[0]][coordinate[1]] = 1
-        # If a queen place a 2
-        if type_of_piece == "queen":
-            self.playable_grid[coordinate[0]][coordinate[1]] = 2
-        # If a rook place a 3
-        if type_of_piece == "rook":
-            self.playable_grid[coordinate[0]][coordinate[1]] = 3
-        # If a bishop place a 4
-        if type_of_piece == "bishop":
-            self.playable_grid[coordinate[0]][coordinate[1]] = 4
-        # If a knight place a 5
-        if type_of_piece == "knight":
-            self.playable_grid[coordinate[0]][coordinate[1]] = 5
-        # If a pawn place a 6
-        if type_of_piece == "pawn":
-            self.playable_grid[coordinate[0]][coordinate[1]] = 6
 
 class Piece:
     '''
@@ -115,6 +84,7 @@ class Piece:
             self.color: *str*
                 A string that is the color of the piece
         '''
+        # Return the color of the piece
         return self.color
 
     def get_position(self):
@@ -128,7 +98,21 @@ class Piece:
             self.position: *tuple*
                 A tuple for the current location of the piece
         '''
+        # Return the position of the piece
         return self.position
+
+    def set_position(self, coordinate):
+        '''
+        This will set the position of the piece
+
+        **Parameters**
+            coordinate: *tuple*
+
+        **Returns**
+            None
+        '''
+        # Set the position equal to the given coordinate
+        self.position = coordinate
 
     def get_type_of_piece(self):
         '''
@@ -141,9 +125,67 @@ class Piece:
             self.type_of_piece: *str*
                 A string for the type of piece it is
         '''
+        # Return the type the piece is
         return self.type_of_piece
 
-    def legal_moves(self, type_of_piece):
+    def place_piece(self, coordinate):
+        '''
+        This will place a piece on the board
+
+        **Parameters**
+            coordinate: *tuple*
+                A tuple holding a square on the board this
+                piece will be placed
+
+        **Returns**
+            None
+        '''
+        # Place a piece on the board depending on the type
+        # Place a white piece
+        if self.color == "white":
+            # If a king place a 1
+            if self.type_of_piece == "king":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (1,1)
+            # If a queen place a 2
+            if self.type_of_piece == "queen":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (1,2)
+            # If a rook place a 3
+            if self.type_of_piece == "rook":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (1,3)
+            # If a bishop place a 4
+            if self.type_of_piece == "bishop":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (1,4)
+            # If a knight place a 5
+            if self.type_of_piece == "knight":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (1,5)
+            # If a pawn place a 6
+            if self.type_of_piece == "pawn":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (1,6)
+        # Place a black piece
+        if self.color == "black":
+            # If a king place a 1
+            if self.type_of_piece == "king":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (0,1)
+            # If a queen place a 2
+            if self.type_of_piece == "queen":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (0,2)
+            # If a rook place a 3
+            if self.type_of_piece == "rook":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (0,3)
+            # If a bishop place a 4
+            if self.type_of_piece == "bishop":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (0,4)
+            # If a knight place a 5
+            if self.type_of_piece == "knight":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (0,5)
+            # If a pawn place a 6
+            if self.type_of_piece == "pawn":
+                board.playable_grid[coordinate[0]][coordinate[1]] = (0,6)
+
+        # Update the position that the piece is placed
+        self.set_position(coordinate)
+    
+    def legal_moves(self):
         '''
         This will return the type of piece
 
@@ -173,7 +215,10 @@ if __name__ == '__main__':
     print(piece.get_color())
     print(piece.get_position())
 
-    board.place_piece(piece.get_type_of_piece(), piece.get_position())
+    piece.place_piece(("B",1))
 
     print("\nPlayable board")
     print(board.playable_grid)
+
+    print("\nPiece position")
+    print(piece.get_position())
