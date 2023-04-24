@@ -207,10 +207,14 @@ class Piece:
 
         **Returns**
             legal_moves: *list, tuples*
-                A list of all the squares a piece could move to
+                A list of all the empty squares a piece could move to
+            legal_moves_attacks: *list, tuples*
+                A list of all the squares a piece could move to with an
+                opposite colored piece
         '''
         # Initialize the legal_moves list
         legal_moves = []
+        legal_moves_attacks = []
 
         legal_files = ["A","B","C","D","E","F","G","H"]
         legal_ranks = [1,2,3,4,5,6,7,8]
@@ -255,12 +259,12 @@ class Piece:
                     and position_rank_attack in legal_ranks\
                     and board.playable_grid[position_file_attack_1]\
                                            [position_rank_attack][0] == "black":
-                    legal_moves.append((position_file_attack_1,position_rank_attack))
+                    legal_moves_attacks.append((position_file_attack_1,position_rank_attack))
                 if  position_file_attack_2 in legal_files\
                     and position_rank_attack in legal_ranks\
                     and board.playable_grid[position_file_attack_2]\
                                            [position_rank_attack][0] == "black":
-                    legal_moves.append((position_file_attack_2,position_rank_attack))
+                    legal_moves_attacks.append((position_file_attack_2,position_rank_attack))
 
             # If the color of the pawn is black
             if self.color == "black":
@@ -300,771 +304,226 @@ class Piece:
                     and position_rank_attack in legal_ranks\
                     and board.playable_grid[position_file_attack_1]\
                                            [position_rank_attack][0] == "white":
-                    legal_moves.append((position_file_attack_1,position_rank_attack))
+                    legal_moves_attacks.append((position_file_attack_1,position_rank_attack))
                 if position_file_attack_2 in legal_files\
                     and position_rank_attack in legal_ranks\
                     and board.playable_grid[position_file_attack_2]\
                                            [position_rank_attack][0] == "white":
-                    legal_moves.append((position_file_attack_2,position_rank_attack))
+                    legal_moves_attacks.append((position_file_attack_2,position_rank_attack))
 
-        # If the type of piece is a bishop
-        if self.type_of_piece == "bishop":
-            # If the color of the bishop is white
-            if self.color == 'white':
-                ## Direction increase rank, increase file
-                # Iniitalize the file ahead of the bishop
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the bishop
-                position_rank_ahead = self.get_position()[1] + 1
+        if self.type_of_piece == "bishop"\
+                or self.type_of_piece == "rook"\
+                or self.type_of_piece == "queen":
+            # If the type of piece is a bishop
+            if self.type_of_piece == "bishop":
+                directions = [(-1,1),(1,1),(1,-1),(-1,-1)]
+            # If the type of piece is a rook
+            if self.type_of_piece == "rook":
+                directions = [(-1,0),(0,1),(1,0),(0,-1)]
+            # If the type of piece is a queen
+            if self.type_of_piece == "queen":
+                directions = [(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1)]
+
+            for direction in directions:
+                # Create file and rank variables
+                position_file = chr(ord(self.get_position()[0]) + direction[0])
+                position_rank = self.get_position()[1] + direction[1]
                 # Initialize piece seen variable to 0
                 piece_seen = 0
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_ahead]\
-                                           [position_rank_ahead][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_ahead][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_ahead = position_rank_ahead + 1
+                if self.color == "white":
+                    # For the positions in front of the piece keep going while the sqaure
+                    # is empty or has an opposite colored piece
+                    while position_file in legal_files\
+                        and position_rank in legal_ranks\
+                        and board.playable_grid[position_file]\
+                                                [position_rank][0] != "white"\
+                        and piece_seen == 0:
+                        # Check if a piece of the opposite color was seen
+                        if board.playable_grid[position_file][position_rank][0] == "black":
+                            # Append this move as a legal attacking move
+                            legal_moves_attacks.append((position_file,position_rank))
+                            piece_seen += 1
+                        else:
+                            # Append this move as a legal move
+                            legal_moves.append((position_file,position_rank))
+                        # Check another square ahead
+                        position_file = chr(ord(position_file) + direction[0])
+                        position_rank = position_rank + direction[1]
+                if self.color == "black":
+                    # For the positions in front of the piece keep going while the sqaure
+                    # is empty or has an opposite colored piece
+                    while position_file in legal_files\
+                        and position_rank in legal_ranks\
+                        and board.playable_grid[position_file]\
+                                                [position_rank][0] != "black"\
+                        and piece_seen == 0:
+                        # Check if a piece of the opposite color was seen
+                        if board.playable_grid[position_file][position_rank][0] == "white":
+                            # Append this move as a legal attacking move
+                            legal_moves_attacks.append((position_file,position_rank))
+                            piece_seen += 1
+                        else:
+                            # Append this move as a legal move
+                            legal_moves.append((position_file,position_rank))
+                        # Check another square ahead
+                        position_file = chr(ord(position_file) + direction[0])
+                        position_rank = position_rank + direction[1]
 
-                ## Direction decrease rank, increase file
-                # Iniitalize the file ahead of the bishop
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in behind of the bishop
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
+        # If the type of piece is a king
+        if self.type_of_piece == "king":
+            # Create directions to move
+            directions = [(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1)]
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_ahead]\
-                                           [position_rank_behind][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_behind][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_behind))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_behind = position_rank_behind - 1
+            for direction in directions:
+                # Create file and rank variables
+                position_file = chr(ord(self.get_position()[0]) + direction[0])
+                position_rank = self.get_position()[1] + direction[1]
 
-                ## Direction increase rank, decrease file
-                # Iniitalize the file behind the bishop
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank ahead of the bishop
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
+                if self.color == "white":
+                    # If the position is empty or doesn't have a white piece
+                    if position_file in legal_files\
+                        and position_rank in legal_ranks\
+                        and board.playable_grid[position_file]\
+                                                [position_rank][0] != "white":
+                        # Check if a piece of the opposite color was seen
+                        if board.playable_grid[position_file][position_rank][0] == "black":
+                            # Append this move as a legal attacking move
+                            legal_moves_attacks.append((position_file,position_rank))
+                        else:
+                            # Append this move as a legal move
+                            legal_moves.append((position_file,position_rank))
+                        # Check another square ahead
+                        position_file = chr(ord(position_file) + direction[0])
+                        position_rank = position_rank + direction[1]
+                if self.color == "black":
+                    # If the position is empty or doesn't have a black piece
+                    if position_file in legal_files\
+                        and position_rank in legal_ranks\
+                        and board.playable_grid[position_file]\
+                                                [position_rank][0] != "black":
+                        # Check if a piece of the opposite color was seen
+                        if board.playable_grid[position_file][position_rank][0] == "white":
+                            # Append this move as a legal attacking move
+                            legal_moves_attacks.append((position_file,position_rank))
+                        else:
+                            # Append this move as a legal move
+                            legal_moves.append((position_file,position_rank))
+                        # Check another square ahead
+                        position_file = chr(ord(position_file) + direction[0])
+                        position_rank = position_rank + direction[1]
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_ahead][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank_ahead][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_ahead = position_rank_ahead + 1
+        # If the type of piece is a knight
+        if self.type_of_piece == "knight":
+            if self.color == "white":
+                # Create directions to move to begin L shape
+                directions = [(0,2), (0,-2), (2,0), (-2,0)]
+                # Move left and right, depending on beginning of L
+                side_rank = [(0,-1), (0,1)]
+                side_file = [(-1,0), (1,0)]
 
-                ## Direction decrease rank, decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the bishop
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
+                # Loop through all directions
+                for direction in directions:
+                    # Create starting file and rank variables
+                    position_file_start = chr(ord(self.get_position()[0]) + direction[0])
+                    position_rank_start = self.get_position()[1] + direction[1]
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_behind][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind]\
-                                          [position_rank_behind][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_behind))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_behind = position_rank_behind - 1
+                    # If the file doesn't change
+                    if direction[0] == 0:
+                        # Loop through both directions on either side of the L
+                        for side in side_file:
+                            # Create file and rank variables
+                            position_file = chr(ord(position_file_start) + side[0])
+                            position_rank = position_rank_start + side[1]
 
-            # If the color of the rook is black
-            if self.color == 'black':
-                ## Direction increase rank, increase file
-                # Iniitalize the file ahead of the bishop
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the bishop
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
+                            # Check if position is empty or doesn't have a white piece
+                            if position_file in legal_files\
+                                and position_rank in legal_ranks\
+                                and board.playable_grid[position_file]\
+                                                        [position_rank][0] != "white":
+                                # Check if a piece of the opposite color was seen
+                                if board.playable_grid[position_file][position_rank][0] == "black":
+                                    # Append this move as a legal attacking move
+                                    legal_moves_attacks.append((position_file,position_rank))
+                                else:
+                                    # Append this move as a legal move
+                                    legal_moves.append((position_file,position_rank))
+                    # If the rank doesn't change
+                    if direction[1] == 0:
+                        # Loop through both directions on either side of the L
+                        for side in side_rank:
+                            # Create file and rank variables
+                            position_file = chr(ord(position_file_start) + side[0])
+                            position_rank = position_rank_start + side[1]
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_ahead][position_rank_ahead][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_ahead][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_ahead = position_rank_ahead + 1
+                            # Check if position is empty or doesn't have a white piece
+                            if position_file in legal_files\
+                                and position_rank in legal_ranks\
+                                and board.playable_grid[position_file]\
+                                                        [position_rank][0] != "white":
+                                # Check if a piece of the opposite color was seen
+                                if board.playable_grid[position_file][position_rank][0] == "black":
+                                    # Append this move as a legal attacking move
+                                    legal_moves_attacks.append((position_file,position_rank))
+                                else:
+                                    # Append this move as a legal move
+                                    legal_moves.append((position_file,position_rank))
+            if self.color == "black":
+                # Create directions to move to begin L shape
+                directions = [(0,2), (0,-2), (2,0), (-2,0)]
+                # Move left and right, depending on beginning of L
+                side_rank = [(0,-1), (0,1)]
+                side_file = [(-1,0), (1,0)]
 
-                ## Direction decrease rank, increase file
-                # Iniitalize the file ahead of the bishop
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in behind of the bishop
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
+                # Loop through all directions
+                for direction in directions:
+                    # Create starting file and rank variables
+                    position_file_start = chr(ord(self.get_position()[0]) + direction[0])
+                    position_rank_start = self.get_position()[1] + direction[1]
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_ahead]\
-                                           [position_rank_behind][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_behind][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_behind))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_behind = position_rank_behind - 1
+                    # If the file doesn't change
+                    if direction[0] == 0:
+                        # Loop through both directions on either side of the L
+                        for side in side_file:
+                            # Create file and rank variables
+                            position_file = chr(ord(position_file_start) + side[0])
+                            position_rank = position_rank_start + side[1]
 
-                ## Direction increase rank, decrease file
-                # Iniitalize the file behind the bishop
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank ahead of the bishop
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
+                            # Check if position is empty or doesn't have a black piece
+                            if position_file in legal_files\
+                                and position_rank in legal_ranks\
+                                and board.playable_grid[position_file]\
+                                                        [position_rank][0] != "black":
+                                # Check if a piece of the opposite color was seen
+                                if board.playable_grid[position_file][position_rank][0] == "white":
+                                    # Append this move as a legal attacking move
+                                    legal_moves_attacks.append((position_file,position_rank))
+                                else:
+                                    # Append this move as a legal move
+                                    legal_moves.append((position_file,position_rank))
+                    # If the rank doesn't change
+                    if direction[1] == 0:
+                        # Loop through both directions on either side of the L
+                        for side in side_rank:
+                            # Create file and rank variables
+                            position_file = chr(ord(position_file_start) + side[0])
+                            position_rank = position_rank_start + side[1]
 
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_ahead][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank_ahead][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank, decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the bishop
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the bishop keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_behind][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind]\
-                                          [position_rank_behind][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_behind))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_behind = position_rank_behind - 1
-
-        # If the type of piece is a rook
-        if self.type_of_piece == "rook":
-            # If the color of the rook is white
-            if self.color == 'white':
-                ## Direction increase rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the pawn
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file]\
-                                           [position_rank_ahead][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_ahead][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_ahead))
-                    # Check another square ahead
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the pawn
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file][position_rank_behind][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_behind][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_behind))
-                    # Check another square ahead
-                    position_rank_behind = position_rank_behind - 1
-
-                ## Direction increase file
-                # Iniitalize the inital position of the file
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the rook
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_ahead][position_rank][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-
-                ## Direction decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the rook
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_behind][position_rank][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-            # If the color of the rook is black
-            if self.color == 'black':
-                ## Direction increase rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the rook
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file][position_rank_ahead][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_ahead][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_ahead))
-                    # Check another square ahead
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the rook
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file][position_rank_behind][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_behind][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_behind))
-                    # Check another square ahead
-                    position_rank_behind = position_rank_behind - 1
-
-                ## Direction increase file
-                # Iniitalize the inital position of the file
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the rook
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_ahead][position_rank][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-
-                ## Direction decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the rook
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the rook keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_behind][position_rank][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-
-        # If the type of piece is a queen
-        if self.type_of_piece == "queen":
-            # If the color of the queen is white
-            if self.color == 'white':
-                ## Direction increase rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the queen
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file]\
-                                           [position_rank_ahead][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_ahead][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_ahead))
-                    # Check another square ahead
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the queen
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file][position_rank_behind][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_behind][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_behind))
-                    # Check another square behind
-                    position_rank_behind = position_rank_behind - 1
-
-                ## Direction increase file
-                # Iniitalize the inital position of the file
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the queen
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_ahead][position_rank][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-
-                ## Direction decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the queen
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_behind][position_rank][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank))
-                    # Check another square behind
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-
-                ## Direction increase rank, increase file
-                # Iniitalize the file ahead of the queen
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the queen
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_ahead]\
-                                           [position_rank_ahead][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_ahead][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank, increase file
-                # Iniitalize the file ahead of the queen
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in behind of the queen
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_ahead]\
-                                           [position_rank_behind][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_behind][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_behind))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_behind = position_rank_behind - 1
-
-                ## Direction increase rank, decrease file
-                # Iniitalize the file behind the queen
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank ahead of the queen
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_ahead][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank_ahead][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank, decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the queen
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_behind][0] != "white"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind]\
-                                          [position_rank_behind][0] == "black":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_behind))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_behind = position_rank_behind - 1
-            # If the color of the queen is black
-            if self.color == 'black':
-                ## Direction increase rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the queen
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file][position_rank_ahead][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_ahead][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_ahead))
-                    # Check another square ahead
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank
-                # Iniitalize the inital position of the file
-                position_file = self.get_position()[0]
-                # Initialize the rank in front of the queen
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file][position_rank_behind][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file][position_rank_behind][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file,position_rank_behind))
-                    # Check another square ahead
-                    position_rank_behind = position_rank_behind - 1
-
-                ## Direction increase file
-                # Iniitalize the inital position of the file
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the queen
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_ahead][position_rank][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-
-                ## Direction decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the queen
-                position_rank = self.get_position()[1]
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank in legal_ranks\
-                    and board.playable_grid[position_file_behind][position_rank][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-
-                ## Direction increase rank, increase file
-                # Iniitalize the file ahead of the queen
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in front of the queen
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_ahead][position_rank_ahead][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_ahead][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank, increase file
-                # Iniitalize the file ahead of the queen
-                position_file_ahead = chr(ord(self.get_position()[0]) + 1)
-                # Initialize the rank in behind of the queen
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_ahead in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_ahead]\
-                                           [position_rank_behind][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_ahead][position_rank_behind][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_ahead,position_rank_behind))
-                    # Check another square ahead
-                    position_file_ahead = chr(ord(position_file_ahead) + 1)
-                    position_rank_behind = position_rank_behind - 1
-
-                ## Direction increase rank, decrease file
-                # Iniitalize the file behind the queen
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank ahead of the queen
-                position_rank_ahead = self.get_position()[1] + 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_ahead in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_ahead][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind][position_rank_ahead][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_ahead))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_ahead = position_rank_ahead + 1
-
-                ## Direction decrease rank, decrease file
-                # Iniitalize the inital position of the file
-                position_file_behind = chr(ord(self.get_position()[0]) - 1)
-                # Initialize the rank in front of the queen
-                position_rank_behind = self.get_position()[1] - 1
-                # Initialize piece seen variable to 0
-                piece_seen = 0
-
-                # For the positions in front of the queen keep going while the sqaure
-                # is empty
-                while position_file_behind in legal_files\
-                    and position_rank_behind in legal_ranks\
-                    and board.playable_grid[position_file_behind]\
-                                           [position_rank_behind][0] != "black"\
-                    and piece_seen == 0:
-                    # Check if a piece of the opposite color was seen
-                    if board.playable_grid[position_file_behind]\
-                                          [position_rank_behind][0] == "white":
-                        piece_seen += 1
-                    # Append this move as a legal move
-                    legal_moves.append((position_file_behind,position_rank_behind))
-                    # Check another square ahead
-                    position_file_behind = chr(ord(position_file_behind) - 1)
-                    position_rank_behind = position_rank_behind - 1
+                            # Check if position is empty or doesn't have a black piece
+                            if position_file in legal_files\
+                                and position_rank in legal_ranks\
+                                and board.playable_grid[position_file]\
+                                                        [position_rank][0] != "black":
+                                # Check if a piece of the opposite color was seen
+                                if board.playable_grid[position_file][position_rank][0] == "white":
+                                    # Append this move as a legal attacking move
+                                    legal_moves_attacks.append((position_file,position_rank))
+                                else:
+                                    # Append this move as a legal move
+                                    legal_moves.append((position_file,position_rank))
 
         # Return the legal_moves list
-        return legal_moves
+        return legal_moves, legal_moves_attacks
 
 if __name__ == '__main__':
     # Create the board
@@ -1117,22 +576,6 @@ if __name__ == '__main__':
 
     print("\nColor of board")
     print(board.color_grid)
-    print("\nPlayable board")
-    print(board.playable_grid)
-    print("\n")
-
-    print("Legal Moves for w_pawn_a")
-    print(w_pawn_a.legal_moves())
-
-    b_pawn_b.place_piece(("B",3))
-    b_queen.place_piece(("D",5))
-
-    print("Legal Moves for w_pawn_a")
-    print(w_pawn_a.legal_moves())
-
-    print("Legal Moves for b_queen")
-    print(b_queen.legal_moves())
-
     print("\nPlayable board")
     print(board.playable_grid)
     print("\n")
