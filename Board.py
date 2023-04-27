@@ -4,147 +4,216 @@ players will be able to interact with the board and pieces
 pygame will be used to help make the gui
 '''
 
-import pygame as py
-py.init()
+import pygame
+import sys
 
-# this class will help set the tiles of the board
-# white side of the board should have a1 at the bottom left
-# a1 should be black
+# Screen dimensions
+WIDTH = 800
+HEIGHT = 800
+
+# Board dimensions
+ROWS = 8
+COLS = 8
+TILE = WIDTH // COLS
+
+class Chess_App:
+
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Carter and Khalil's Cool Chess")
+        self.game = Game()
+
+    def run(self):
+        
+        screen = self.screen
+        game = self.game
+
+        while True:
+            # show the board and pieces
+            game.show_board(screen)
+            game.show_pieces(screen)
+
+            # quit application if user clicks the X
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+            
+            # update the display after every event
+            pygame.display.update()
+
+
+class Game:
+
+    def __init__(self):
+        # initialize the board using the board class
+        self.board = Board()
+
+    # methods to show the board and objects
+
+    def show_board(self, surface):
+        for row in range(ROWS):
+            for col in range(COLS):
+                # set color of tile
+                # if row + col is even, color is white
+                # if row + col is odd, color is black
+                if (row + col) % 2 == 0:
+                    color = (247, 207, 164) # light brown
+                else:
+                    color = (199, 141, 83) # dark brown
+            
+                    # draw square
+                rect = (col * TILE, row * TILE, TILE, TILE)
+                pygame.draw.rect(surface, color, rect)
+
+
+    def show_pieces(self, surface):
+        for row in range(ROWS):
+            for col in range(COLS):
+                # check to see if the tile has a piece
+                if self.board.tiles[row][col].piece_present():
+                    # piece is the piece object located on a tile on the board
+                    piece = self.board.tiles[row][col].piece
+                    # grab the image file name from the piece object
+                    piece.set_img()
+                    img = pygame.image.load(piece.img)
+                    # set the center of the image to the center of the tile
+                    img_center = col * TILE + TILE // 2, row * TILE + TILE // 2
+                    piece.img_rect = img.get_rect(center=img_center)
+                    # draw the image on the surface
+                    surface.blit(img, piece.img_rect)
+
+
+# create the super class for pieces
+# pieces have name and colour and an image
+class Piece:
+
+    def __init__(self, name, color, img=None, img_rect=None):
+        self.name = name
+        self.color = color
+        self.moves = []
+        self.moved = False
+        self.img = img
+        self.set_img()
+        self.img_rect = img_rect
+
+    def set_img(self):
+        self.img = f'{self.color[0]}{self.name}.png'
+
+    def add_move(self, move):
+        self.moves.append(move)
+
+    def clear_moves(self):
+        self.moves = []
+
+
+# create the children of the piece class, one for each piece
+class Pawn(Piece):
+
+    def __init__(self, color):
+        # pawns only have one direction
+        # white starts at the bottom and goes up (negative direction)
+        # black starts at the top and goes down (positive direction)
+        self.dir = -1 if color == 'white' else 1
+        super().__init__('pawn', color)
+
+
+class Knight(Piece):
+
+    def __init__(self, color):
+        super().__init__('knight', color)
+
+
+class Bishop(Piece):
+
+    def __init__(self, color):
+        super().__init__('bishop', color)
+
+
+class Rook(Piece):
+
+    def __init__(self, color):
+        super().__init__('rook', color)
+
+
+class Queen(Piece):
+
+    def __init__(self, color):
+        super().__init__('queen', color)
+
+
+class King(Piece):
+
+    def __init__(self, color):
+        super().__init__('king', color)
+
+
 class Tile:
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
 
-        # even squares are white, odd squares are black
-        if (x + y) % 2 == 0:
-            self.colour = 'white'
-        else: 
-            self.colour = 'black'
-        
-        # set the colour of the tile
-        if self.colour == 'white':
-            self.draw_colour = (247, 207, 164)
-        else:
-            self.draw_colour = (199, 141, 83)
+    def __init__(self, row, col, piece=None):
+        self.row = row
+        self.col = col
+        self.piece = piece
 
-        self.piece = None
-        self.tile_x = x * width
-        self.tile_y = y * height
-        self.tile_pos = (self.tile_x, self.tile_y)
-        self.move_colour = (97, 235, 110)
-        self.attack_colour = (230, 47, 73)
-        self.highlight_move = False
-        self.highlight_attack = False
-        self.piece = None
-        self.rect = py.Rect(self.tile_x, self.tile_y, self.width, self.height)
-
-    def get_pos(self):
-        columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-        return columns[self.x] + str(self.y + 1)
-    
-    def highlight(self, display):
-        # set tile colours
-        if self.highlight_move:
-            py.draw.rect(display, self.move_colour, self.rect)
-
-        elif self.highlight_attack:
-            py.draw.rect(display, self.attack_colour, self.rect)
-
-        else:
-            py.draw.rect(display, self.colour, self.rect)
-        
-        # place the piece in the centre of the tile
+    # function to check if a tile has a piece
+    def piece_present(self):
         if self.piece != None:
-            center_rect = self.piece.img.get_rect()
-            center_rect.center = self.rect.center
-            display.blit(self.piece.img, center_rect)
+            return True
+        else:
+            return False
+
 
 class Board:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        # ensure that the board fits equally into the window
-        self.tile_width = width // 8
-        self.tile_height = height // 8
-        self.selected_tile = None
-        # first turn starts with white
-        self.turn = 'white'
-        # set the inital board configuration
-        self.config = [
-            ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
-            ['bP', 'bP', 'bP', 'bP', 'bP', 'bP', 'bP', 'bP'],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP'],
-            ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']
-        ]
-        self.tiles = self.create_tiles()
-        # self.setup_board()
 
-    # create the tiles for the board using the Tile class
-    def create_tiles(self):
-        setup = []
-        for i in range(8):
-            for j in range(8):
-                setup.append(Tile(i, j, self.tile_width, self.tile_height))
-        return setup
-    
-    # retrieve the tile at a given position
-    def get_tile(self, position):
-        for tile in self.tiles:
-            if tile.get_pos(tile.x, tile.y) == (position):
-                return tile
+    def __init__(self):
+        self.tiles = [[0, 0, 0, 0, 0, 0, 0, 0] for col in range(COLS)]
+        self.create_board()
+        self.create_pieces('white')
+        self.create_pieces('black')
 
-    # retrieve a piece at a given position
-    def get_piece(self, position):
-        return self.get_tile(position).piece
-    
-    # create a function that handles user input
-    # i and j are the x and y coordinates of the click
-    def user_input(self, i, j):
-        x = i // self.tile_width
-        y = j // self.tile_height
-        clicked_tile = self.get_tile((x, y))
-        # if the user clicks on a tile with a piece, select that piece if it is the correct turn
-        if clicked_tile.piece != None:
-            if clicked_tile.piece.colour == self.turn:
-                self.selected_piece = clicked_tile.piece.colour
-        elif clicked_tile.piece == None:
-            if self.selected_piece != None:
-                self.move_piece(self.selected_piece, clicked_tile)
-                self.selected_piece = None
-        # if the user moves a piece, switch the turn
-        elif self.selected_piece.move(self, clicked_tile):
-            self.turn = 'black' if self.turn == 'white' else 'white'
+    def create_board(self):
+        for row in range(ROWS):
+            for col in range(COLS):
+                self.tiles[row][col] = Tile(row, col)
 
-    # create a function that highlights possible moves of a piece
-    def highlight(self, display):
-        if self.selected_piece != None:
-            self.get_tile(self.selected_piece.position).highlight_move = True
-            for tile in self.selected_piece.get_valid_moves(self):
-                tile.highlight_move = True
-            for tile in self.selected_piece.get_valid_attacks(self):
-                tile.highlight_attack = True
-        for tile in self.tiles:
-            tile.draw(display)
+    def create_pieces(self, color):
+        # white pieces will be on the front 2 rows
+        # black pieces will be on the back 2 rows
+        if color == 'white':
+            row_pawn = 6
+            row_big = 7
+        else:
+            row_pawn = 1
+            row_big = 0
 
-if __name__ == "__main__":
-    board = Board(800, 800)
-    display = py.display.set_mode((board.width, board.height))
+        # place pawns on the board
+        for col in range(COLS):
+            self.tiles[row_pawn][col] = Tile(row_pawn, col, Pawn(color))
 
-    running = True
-    while running:
-        for event in py.event.get():
-            if event.type == py.QUIT:
-                running = False
-        
-        for tile in board.tiles:
-            tile.highlight(display)
+        # place knights on the board
+        self.tiles[row_big][1] = Tile(row_big, 1, Knight(color))
+        self.tiles[row_big][6] = Tile(row_big, 6, Knight(color))
 
-        py.display.update()
+        # place bishops on the board
+        self.tiles[row_big][2] = Tile(row_big, 2, Bishop(color))
+        self.tiles[row_big][5] = Tile(row_big, 5, Bishop(color))
 
-    py.quit()
+        # place rooks on the board
+        self.tiles[row_big][0] = Tile(row_big, 0, Rook(color))
+        self.tiles[row_big][7] = Tile(row_big, 7, Rook(color))
+
+        # place queen on the board
+        self.tiles[row_big][3] = Tile(row_big, 3, Queen(color))
+
+        # place king on the board
+        self.tiles[row_big][4] = Tile(row_big, 4, King(color))
+
+
+if __name__ == '__main__':
+    chess = Chess_App()
+    chess.run()
