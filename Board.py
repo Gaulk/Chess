@@ -345,17 +345,16 @@ class Board:
                         pos_move_col += col_dir
 
         if isinstance(piece, Pawn):
-            # check if the pawn has moved
-            # BUG with diagonal moves
+        # check if the pawn has moved
+        # dir is pos for black pawn, neg for white pawn
             if piece.moved == False:
-                # pawn can move forward one square or attack diagonally
-                # check to see if the tile is empty
-                # check the square ahead of the pawn
+                # check to see if the tile ahead is empty
                 if self.tiles[row + piece.dir][col].empty_tile():
-                    # create a move object
-                    # check to see if on board
+                    # check to see if the tile ahead is on the board
                     if Tile.on_board(row + piece.dir, col):
+                        # create a move object made of the starting tile and the chosen tile
                         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col))
+                        # add the move to the piece's list of moves
                         piece.add_move(move)
                     # check to see if the tile two squares ahead is empty
                     if Tile.on_board(row + 2 * piece.dir, col):
@@ -363,15 +362,19 @@ class Board:
                         # check to see if on board
                             move = Move(Tile(row, col, piece), Tile(row + 2 * piece.dir, col))
                             piece.add_move(move)
-                # check the diagonal squares for an enemy piece
-                # if Tile.on_board(row + piece.dir, col + 1):
-                #     if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
-                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col + 1))
-                #         piece.add_move(move)
-                # if Tile.on_board(row + piece.dir, col - 1):
-                #     if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
-                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col - 1))
-                #         piece.add_move(move)
+                # check the diagonal squares to see if on the board
+                if Tile.on_board(row + piece.dir, col + 1):
+                    if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
+                        init_tile = Tile(row, col, piece)
+                        chosen_tile = Tile(row + piece.dir, col + 1)
+                        move = Move(init_tile, chosen_tile)
+                        piece.add_move(move)
+                if Tile.on_board(row + piece.dir, col - 1):
+                    if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
+                        init_tile = Tile(row, col, piece)
+                        chosen_tile = Tile(row + piece.dir, col - 1)
+                        move = Move(init_tile, chosen_tile)
+                        piece.add_move(move)
             # if pawn has moved, remove the two square move
             else:
                 if self.tiles[row + piece.dir][col].empty_tile():
@@ -379,15 +382,19 @@ class Board:
                     if Tile.on_board(row + piece.dir, col):
                         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col))
                         piece.add_move(move)
-                # if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
-                #     # check to see if on board
-                #     if Tile.on_board(row + piece.dir, col + 1):
-                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col + 1))
-                #         piece.add_move(move)
-                # if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
-                #     if Tile.on_board[row + piece.dir][col - 1]:
-                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col - 1))
-                #         piece.add_move(move)
+                # check the diagonal squares for an enemy piece
+                if Tile.on_board(row + piece.dir, col + 1):
+                    if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
+                        init_tile = Tile(row, col, piece)
+                        chosen_tile = Tile(row + piece.dir, col + 1)
+                        move = Move(init_tile, chosen_tile)
+                        piece.add_move(move)
+                if Tile.on_board(row + piece.dir, col - 1):
+                    if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
+                        init_tile = Tile(row, col, piece)
+                        chosen_tile = Tile(row + piece.dir, col - 1)
+                        move = Move(init_tile, chosen_tile)
+                        piece.add_move(move)
                 # these pawns can also en passant
                 # enemy pawn needs to have just moved two squares to a position
                 # where it is adjacent to the current pawn
@@ -523,7 +530,7 @@ class Board:
 
         # test pieces
         # self.tiles[4][4] = Tile(4, 4, King('black'))
-        # self.tiles[5][5] = Tile(5, 5, Rook('white'))
+        self.tiles[5][5] = Tile(5, 5, Pawn('black'))
         # self.tiles[6][6] = Tile(6, 6, Queen('black'))
 
 
