@@ -1,7 +1,7 @@
 '''
-This code will create the gui for the board and the pieces
-players will be able to interact with the board and pieces
-pygame will be used to help make the gui
+This code contains the main architecture of the chess game.
+It contains the classes for the board, tiles, pieces, moves, and drag.
+It also contains the main game loop.
 '''
 
 import pygame
@@ -52,13 +52,15 @@ class Chess_App:
 
                     if board.tiles[clicked_row][clicked_col].piece_present:
                         piece = board.tiles[clicked_row][clicked_col].piece
-                        board.valid_moves(piece, clicked_row, clicked_col)
-                        drag.initial_pos(event.pos)
-                        drag.drag_piece(piece)
-                        # stack the board, highlights and pieces
-                        game.show_board(screen)
-                        game.highlight_moves(screen)
-                        game.show_pieces(screen)
+                        # check to see if the piece is the same color as the turn
+                        if piece.color == game.player_color:
+                            board.valid_moves(piece, clicked_row, clicked_col)
+                            drag.initial_pos(event.pos)
+                            drag.drag_piece(piece)
+                            # stack the board, highlights and pieces
+                            game.show_board(screen)
+                            game.highlight_moves(screen)
+                            game.show_pieces(screen)
 
 
                 # allows for dragging, refreshes piece and background
@@ -89,6 +91,9 @@ class Chess_App:
                             # stack the board and pieces
                             game.show_board(screen)
                             game.show_pieces(screen)
+                            # change the turn
+                            game.change_turn()
+                            print(game.player_color)
 
                     drag.drop_piece()
                 
@@ -110,6 +115,7 @@ class Game:
         # initialize the board using the board class
         self.board = Board()
         self.drag = Drag()
+        self.player_color = 'white'
 
     # methods to show the board and objects
 
@@ -159,6 +165,12 @@ class Game:
                 rect = (move.final_tile.col * TILE, move.final_tile.row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+# method of changing tuns
+    def change_turn(self):
+        if self.player_color == 'black':
+            self.player_color = 'white'
+        else:
+            self.player_color = 'black'
 
 # create the super class for pieces
 # pieces have name and colour and an image
@@ -530,7 +542,7 @@ class Board:
 
         # test pieces
         # self.tiles[4][4] = Tile(4, 4, King('black'))
-        self.tiles[5][5] = Tile(5, 5, Pawn('black'))
+        # self.tiles[5][5] = Tile(5, 5, Pawn('black'))
         # self.tiles[6][6] = Tile(6, 6, Queen('black'))
 
 
