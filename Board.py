@@ -63,7 +63,7 @@ class Chess_App:
 
                 # allows for dragging, refreshes piece and background
                 # when mouse is moved
-                if event.type == pygame.MOUSEMOTION:
+                elif event.type == pygame.MOUSEMOTION:
                     if drag.dragging:
                         drag.update_mouse(event.pos)
                         # stack the board, highlights and pieces
@@ -73,10 +73,26 @@ class Chess_App:
                         drag.update_blit(screen)
 
                 # allows for dropping a piece
-                if event.type == pygame.MOUSEBUTTONUP:
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    if drag.dragging:
+                        drag.update_mouse(event.pos)
+                        chosen_row = drag.mouse_y // TILE
+                        chosen_col = drag.mouse_x // TILE
+
+                        # check to see if the move is valid
+                        initial_pos = Tile(drag.init_row, drag.init_col)
+                        final_pos = Tile(chosen_row, chosen_col)
+                        move = Move(initial_pos, final_pos)
+
+                        if board.check_valid(drag.piece, move):
+                            board.move_piece(drag.piece, move)
+                            # stack the board and pieces
+                            game.show_board(screen)
+                            game.show_pieces(screen)
+
                     drag.drop_piece()
                 
-                if event.type == pygame.QUIT:
+                elif event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
 
@@ -163,6 +179,8 @@ class Piece:
     def add_move(self, move):
         self.moves.append(move)
 
+    def clear_moves(self):
+        self.moves = []
 
 # create the children of the piece class, one for each piece
 class Pawn(Piece):
@@ -212,6 +230,9 @@ class Tile:
         self.col = col
         self.piece = piece
 
+    def __eq__(self, other):
+        return self.row == other.row and self.col == other.col
+
     # function to check if a tile has a piece
     def piece_present(self):
         if self.piece != None:
@@ -253,10 +274,32 @@ class Board:
     def __init__(self):
         self.tiles = [[0, 0, 0, 0, 0, 0, 0, 0] for col in range(COLS)]
         self.create_board()
+        self.last_move = None
         self.create_pieces('white')
         self.create_pieces('black')
 
-    
+
+    def move_piece(self, piece, move):
+        initial = move.init_tile
+        final = move.final_tile
+
+        # update the board, remove the initial piece
+        self.tiles[initial.row][initial.col].piece = None
+        # add the piece to the final tile
+        self.tiles[final.row][final.col].piece = piece
+
+        # update that the piece has moved
+        piece.moved = True
+
+        # remove the valid moves
+        piece.clear_moves()
+        
+        # add the move to the last move
+        self.last_move = move
+
+
+    def check_valid(self, piece, move):
+        return move in piece.moves
 
 
     def valid_moves(self, piece, row, col):
@@ -303,6 +346,7 @@ class Board:
 
         if isinstance(piece, Pawn):
             # check if the pawn has moved
+            # BUG with diagonal moves
             if piece.moved == False:
                 # pawn can move forward one square or attack diagonally
                 # check to see if the tile is empty
@@ -314,20 +358,20 @@ class Board:
                         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col))
                         piece.add_move(move)
                     # check to see if the tile two squares ahead is empty
-                    if self.tiles[row + 2 * piece.dir][col].empty_tile():
+                    if Tile.on_board(row + 2 * piece.dir, col):
+                        if self.tiles[row + 2 * piece.dir][col].empty_tile():
                         # check to see if on board
-                        if Tile.on_board(row + 2 * piece.dir, col):
                             move = Move(Tile(row, col, piece), Tile(row + 2 * piece.dir, col))
                             piece.add_move(move)
                 # check the diagonal squares for an enemy piece
-                if Tile.on_board(row + piece.dir, col + 1):
-                    if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
-                        move = Move(Tile(row, col, piece), Tile(row + piece.dir, col + 1))
-                        piece.add_move(move)
-                if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
-                    if Tile.on_board[row + piece.dir][col - 1]:
-                        move = Move(Tile(row, col, piece), Tile(row + piece.dir, col - 1))
-                        piece.add_move(move)
+                # if Tile.on_board(row + piece.dir, col + 1):
+                #     if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
+                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col + 1))
+                #         piece.add_move(move)
+                # if Tile.on_board(row + piece.dir, col - 1):
+                #     if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
+                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col - 1))
+                #         piece.add_move(move)
             # if pawn has moved, remove the two square move
             else:
                 if self.tiles[row + piece.dir][col].empty_tile():
@@ -335,15 +379,15 @@ class Board:
                     if Tile.on_board(row + piece.dir, col):
                         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col))
                         piece.add_move(move)
-                if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
-                    # check to see if on board
-                    if Tile.on_board(row + piece.dir, col + 1):
-                        move = Move(Tile(row, col, piece), Tile(row + piece.dir, col + 1))
-                        piece.add_move(move)
-                if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
-                    if Tile.on_board[row + piece.dir][col - 1]:
-                        move = Move(Tile(row, col, piece), Tile(row + piece.dir, col - 1))
-                        piece.add_move(move)
+                # if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
+                #     # check to see if on board
+                #     if Tile.on_board(row + piece.dir, col + 1):
+                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col + 1))
+                #         piece.add_move(move)
+                # if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
+                #     if Tile.on_board[row + piece.dir][col - 1]:
+                #         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col - 1))
+                #         piece.add_move(move)
                 # these pawns can also en passant
                 # enemy pawn needs to have just moved two squares to a position
                 # where it is adjacent to the current pawn
@@ -478,9 +522,10 @@ class Board:
         self.tiles[row_big][4] = Tile(row_big, 4, King(color))
 
         # test pieces
-        self.tiles[4][4] = Tile(4, 4, King('black'))
-        self.tiles[5][5] = Tile(5, 5, Rook('white'))
-        self.tiles[6][6] = Tile(6, 6, Queen('black'))
+        # self.tiles[4][4] = Tile(4, 4, King('black'))
+        # self.tiles[5][5] = Tile(5, 5, Rook('white'))
+        # self.tiles[6][6] = Tile(6, 6, Queen('black'))
+
 
 class Drag:
 
@@ -528,6 +573,9 @@ class Move:
         # the arguments are tile objects
         self.init_tile = init_tile 
         self.final_tile = final_tile
+
+    def __eq__(self, other):
+        return self.init_tile == other.init_tile and self.final_tile == other.final_tile
 
 
 if __name__ == '__main__':
