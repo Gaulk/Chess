@@ -61,9 +61,8 @@ class Chess_App:
                             game.show_board(screen)
                             game.highlight_moves(screen)
                             game.show_pieces(screen)
-
-
-                # allows for dragging, refreshes piece and background
+                        
+                # allow for dragging, refresh piece and background
                 # when mouse is moved
                 elif event.type == pygame.MOUSEMOTION:
                     if drag.dragging:
@@ -93,9 +92,16 @@ class Chess_App:
                             game.show_pieces(screen)
                             # change the turn
                             game.change_turn()
-                            print(game.player_color)
 
                     drag.drop_piece()
+
+                # if 'r' is pressed, reset the game
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        game.reset_game()
+                        game = self.game
+                        board = self.game.board
+                        drag = self.game.drag
                 
                 elif event.type == pygame.QUIT:
                     pygame.quit()
@@ -171,6 +177,12 @@ class Game:
             self.player_color = 'white'
         else:
             self.player_color = 'black'
+
+# create a method to reset the game
+    def reset_game(self):
+        self.__init__()
+
+
 
 # create the super class for pieces
 # pieces have name and colour and an image
@@ -286,7 +298,6 @@ class Board:
     def __init__(self):
         self.tiles = [[0, 0, 0, 0, 0, 0, 0, 0] for col in range(COLS)]
         self.create_board()
-        self.last_move = None
         self.create_pieces('white')
         self.create_pieces('black')
 
@@ -305,9 +316,6 @@ class Board:
 
         # remove the valid moves
         piece.clear_moves()
-        
-        # add the move to the last move
-        self.last_move = move
 
 
     def check_valid(self, piece, move):
