@@ -6,6 +6,7 @@ It also contains the main game loop.
 
 import pygame
 import sys
+import copy
 
 # Screen dimensions
 WIDTH = 800
@@ -183,7 +184,6 @@ class Game:
         self.__init__()
 
 
-
 # create the super class for pieces
 # pieces have name and colour and an image
 class Piece:
@@ -339,15 +339,38 @@ class Board:
         # remove the valid moves
         piece.clear_moves()
 
+
     def castle(self, initial, final):
         # check to see if the king is castling
         return abs (initial.col - final.col) == 2
+
+
+    def king_check(self, piece, move):
+        # create a board copy
+        board_copy = copy.deepcopy(self)
+        piece_copy = copy.deepcopy(piece)
+        # move the piece on the board copy
+        board_copy.move_piece(piece_copy, move)
+        # check to see if the king is in check
+        for i in range(ROWS):
+            for j in range(COLS):
+                # check to see if the tile has an enemy piece
+                if board_copy.tiles[i][j].enemy_present(piece.color):
+                    atk_piece = board_copy.tiles[i][j].piece
+                    board_copy.valid_moves(atk_piece, i, j, k_check=False)
+                    # loop the moves of the enemy piece to see if the king is in check
+                    for atk_move in atk_piece.moves:
+                        if isinstance(atk_move.final_tile.piece, King):
+                            return True # if the king is in check
+                        
+        return False # if the king is not in check
+
 
     def check_valid(self, piece, move):
         return move in piece.moves
 
 
-    def valid_moves(self, piece, row, col):
+    def valid_moves(self, piece, row, col, k_check=True):
         # determines what moves are valid for a piece
         # returns a list of valid moves
         # add carter's code for legal moves
@@ -363,18 +386,30 @@ class Board:
                             
                             # get the initial and chosen tiles
                             initial = Tile(row, col)
-                            chosen = Tile(pos_move_row, pos_move_col)
+                            # create a final piece to see if king is in check
+                            final_piece = self.tiles[pos_move_row][pos_move_col].piece
+                            chosen = Tile(pos_move_row, pos_move_col, final_piece)
                             move = Move(initial, chosen)
 
                             # check to see if the tile is empty
                             # continue iterating for blank tiles
+                            # append the move if the king is not in check
                             if self.tiles[pos_move_row][pos_move_col].empty_tile():
-                                piece.add_move(move)
+                                if k_check:
+                                    if not self.king_check(piece, move):
+                                        piece.add_move(move)
+                                else:
+                                    piece.add_move(move)
                             
                             # check to see if the tile has an enemy piece
+                            # append move if the king is not in check
                             # break after adding move
                             elif self.tiles[pos_move_row][pos_move_col].enemy_present(piece.color):
-                                piece.add_move(move)
+                                if k_check:
+                                    if not self.king_check(piece, move):
+                                        piece.add_move(move)
+                                else:
+                                    piece.add_move(move)
                                 break
 
                             # check to see if the tile has a friendly piece
@@ -389,6 +424,7 @@ class Board:
                         pos_move_row += row_dir
                         pos_move_col += col_dir
 
+
         if isinstance(piece, Pawn):
         # check if the pawn has moved
         # dir is pos for black pawn, neg for white pawn
@@ -397,57 +433,111 @@ class Board:
                 if self.tiles[row + piece.dir][col].empty_tile():
                     # check to see if the tile ahead is on the board
                     if Tile.on_board(row + piece.dir, col):
+                        # check to see if the move will put the king in check
+                        final_piece = self.tiles[row + piece.dir][col].piece
                         # create a move object made of the starting tile and the chosen tile
                         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col))
-                        # add the move to the piece's list of moves
-                        piece.add_move(move)
+                        # add the move to the piece's list of moves if the king is not in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                        else:
+                            piece.add_move(move)
                     # check to see if the tile two squares ahead is empty
                     if Tile.on_board(row + 2 * piece.dir, col):
                         if self.tiles[row + 2 * piece.dir][col].empty_tile():
-                        # check to see if on board
+                            # create final piece to see if king in check
+                            final_piece = self.tiles[row + 2 * piece.dir][col].piece
                             move = Move(Tile(row, col, piece), Tile(row + 2 * piece.dir, col))
-                            piece.add_move(move)
+                            
+                            # if piece is not in check, add the move
+                            if k_check:
+                                if not self.king_check(piece, move):
+                                    piece.add_move(move)
+                            else:
+                                piece.add_move(move)
+
+
                 # check the diagonal squares to see if on the board
                 if Tile.on_board(row + piece.dir, col + 1):
                     if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
                         init_tile = Tile(row, col, piece)
-                        chosen_tile = Tile(row + piece.dir, col + 1)
+                        # add in a final piece to see if king in check
+                        final_piece = self.tiles[row + piece.dir][col + 1].piece
+                        chosen_tile = Tile(row + piece.dir, col + 1, final_piece)
                         move = Move(init_tile, chosen_tile)
-                        piece.add_move(move)
+
+                        # check if the move puts the king in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                        else:
+                            piece.add_move(move)
+
                 if Tile.on_board(row + piece.dir, col - 1):
                     if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
                         init_tile = Tile(row, col, piece)
-                        chosen_tile = Tile(row + piece.dir, col - 1)
+                        # add in a final piece to see if king in check
+                        final_piece = self.tiles[row + piece.dir][col - 1].piece
+                        chosen_tile = Tile(row + piece.dir, col - 1, final_piece)
                         move = Move(init_tile, chosen_tile)
-                        piece.add_move(move)
+
+                        # check if the move puts the king in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                        else:
+                            piece.add_move(move)
+
             # if pawn has moved, remove the two square move
             else:
                 if self.tiles[row + piece.dir][col].empty_tile():
                     # check to see if on board
                     if Tile.on_board(row + piece.dir, col):
+                        # check to see if the move will put the king in check
+                        final_piece = self.tiles[row + piece.dir][col].piece
                         move = Move(Tile(row, col, piece), Tile(row + piece.dir, col))
-                        piece.add_move(move)
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                        else:
+                            piece.add_move(move)
+
                 # check the diagonal squares for an enemy piece
                 if Tile.on_board(row + piece.dir, col + 1):
                     if self.tiles[row + piece.dir][col + 1].enemy_present(piece.color):
                         init_tile = Tile(row, col, piece)
-                        chosen_tile = Tile(row + piece.dir, col + 1)
+                        # add in a final piece to see if king in check
+                        final_piece = self.tiles[row + piece.dir][col + 1].piece
+                        chosen_tile = Tile(row + piece.dir, col + 1, final_piece)
                         move = Move(init_tile, chosen_tile)
-                        piece.add_move(move)
+
+                        # check if the move puts the king in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                        else:
+                            piece.add_move(move)
+
                 if Tile.on_board(row + piece.dir, col - 1):
                     if self.tiles[row + piece.dir][col - 1].enemy_present(piece.color):
                         init_tile = Tile(row, col, piece)
-                        chosen_tile = Tile(row + piece.dir, col - 1)
+                        # add in a final piece to see if king in check
+                        final_piece = self.tiles[row + piece.dir][col - 1].piece
+                        chosen_tile = Tile(row + piece.dir, col - 1, final_piece)
                         move = Move(init_tile, chosen_tile)
-                        piece.add_move(move)
-                # these pawns can also en passant
-                # enemy pawn needs to have just moved two squares to a position
-                # where it is adjacent to the current pawn
+
+                        # check if the move puts the king in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                        else:
+                            piece.add_move(move)
                 # remember to write code for en passant
-                # remember to write code for promotion
                     
 
         elif isinstance(piece, Knight):
+        # BUG with knight not looking through all options when in check
             knight_moves = [
                 (row + 2, col + 1),
                 (row + 2, col - 1),
@@ -466,11 +556,20 @@ class Board:
                     if self.tiles[pos_move_row][pos_move_col].moveable_square(piece.color):
                         # find the initial tile and the chosen tile
                         initial = Tile(row, col)
-                        chosen = Tile(pos_move_row, pos_move_col)
+                        # add in a final piece to see if king in check
+                        final_piece = self.tiles[pos_move_row][pos_move_col].piece
+                        chosen = Tile(pos_move_row, pos_move_col, final_piece)
                         # make a move object
                         move = Move(initial, chosen)
-                        # append the move to the piece's list of moves
-                        piece.add_move(move)
+
+                        # check if the move puts the king in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                            else:
+                                break
+                        else:
+                            piece.add_move(move)
 
 
         elif isinstance(piece, Bishop):
@@ -528,8 +627,14 @@ class Board:
                         chosen = Tile(pos_move_row, pos_move_col)
                         # make a move object
                         move = Move(initial, chosen)
-                        # append the move to the piece's list of moves
-                        piece.add_move(move)
+                        # append the move if it doesn't put the king in check
+                        if k_check:
+                            if not self.king_check(piece, move):
+                                piece.add_move(move)
+                            else:
+                                break
+                        else:
+                            piece.add_move(move)
 
             # castling
             # check to see if the king has moved
@@ -553,13 +658,24 @@ class Board:
                                 # move rook
                                 initial = Tile(row, 0)
                                 chosen = Tile(row, 3)
-                                move = Move(initial, chosen)
-                                l_rook.add_move(move)
+                                move_rook = Move(initial, chosen)
                                 # move king
                                 initial = Tile(row, col)
                                 chosen = Tile(row, 2)
-                                move = Move(initial, chosen)
-                                piece.add_move(move)
+                                move_king = Move(initial, chosen)
+
+                                # check to see if the king is in check
+                                # need to ensure that the rook does not cause check
+                                # need to ensure that the king does not cause check
+                                if k_check:
+                                    if not self.king_check(piece, move_king) and not self.king_check(l_rook, move_rook):
+                                        piece.add_move(move_king)
+                                        piece.add_move(move_rook)
+                                    else:
+                                        break
+                                else:
+                                    piece.add_move(move_king)
+                                    piece.add_move(move_rook)
 
                 # king-side castle
                 # check to see if the right rook has moved
@@ -575,13 +691,25 @@ class Board:
                                 # move rook
                                 initial = Tile(row, 7)
                                 chosen = Tile(row, 5)
-                                move = Move(initial, chosen)
-                                r_rook.add_move(move)
+                                move_rook = Move(initial, chosen)
+
                                 # move king
                                 initial = Tile(row, col)
                                 chosen = Tile(row, 6)
-                                move = Move(initial, chosen)
-                                piece.add_move(move)
+                                move_king = Move(initial, chosen)
+
+                                # check to see if the king is in check
+                                # need to ensure that the rook does not cause check
+                                # need to ensure that the king does not cause check
+                                if k_check:
+                                    if not self.king_check(piece, move_king) and not self.king_check(r_rook, move_rook):
+                                        piece.add_move(move_king)
+                                        piece.add_move(move_rook)
+                                    else:
+                                        break
+                                else:
+                                    piece.add_move(move_king)
+                                    piece.add_move(move_rook)
 
 
             # need to add check and checkmate
