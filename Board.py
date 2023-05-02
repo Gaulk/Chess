@@ -244,6 +244,10 @@ class Queen(Piece):
 class King(Piece):
 
     def __init__(self, color):
+        # rooks are added as attributes of the king
+        # this will be used for castling
+        self.l_rook = None
+        self.r_rook = None
         super().__init__('king', color)
 
 
@@ -311,12 +315,33 @@ class Board:
         # add the piece to the final tile
         self.tiles[final.row][final.col].piece = piece
 
+        # method for pawn promotion
+        if isinstance(piece, Pawn):
+            if final.row == 0 or final.row == 7:
+                self.tiles[final.row][final.col].piece = Queen(piece.color)
+
+        # method for castling
+        if isinstance(piece, King):
+            if self.castle(initial, final):
+                # check to see what direction the king is castling
+                diff = final.col - initial.col
+                if diff < 0:
+                    # castle left
+                    rook = piece.l_rook
+                else:
+                    # castle right
+                    rook = piece.r_rook
+                self.move_piece(rook, rook.moves[-1])
+                    
         # update that the piece has moved
         piece.moved = True
 
         # remove the valid moves
         piece.clear_moves()
 
+    def castle(self, initial, final):
+        # check to see if the king is castling
+        return abs (initial.col - final.col) == 2
 
     def check_valid(self, piece, move):
         return move in piece.moves
@@ -506,7 +531,59 @@ class Board:
                         # append the move to the piece's list of moves
                         piece.add_move(move)
 
-            # need to add castling
+            # castling
+            # check to see if the king has moved
+            if not piece.moved:
+                
+                # queen-side castle
+                # check to see if the left rook has moved
+                l_rook = self.tiles[row][0].piece
+                if isinstance(l_rook, Rook):
+                    if not l_rook.moved:
+                        # iterate between rook and king to see if there are any pieces
+                        for i in range(1, 4):
+                            # if there are pieces, break
+                            if self.tiles[row][i].piece_present():
+                                break
+
+                            # if there are no pieces, add the move
+                            if i == 3:
+                                # add the l_rook to the king's attributes
+                                piece.l_rook = l_rook
+                                # move rook
+                                initial = Tile(row, 0)
+                                chosen = Tile(row, 3)
+                                move = Move(initial, chosen)
+                                l_rook.add_move(move)
+                                # move king
+                                initial = Tile(row, col)
+                                chosen = Tile(row, 2)
+                                move = Move(initial, chosen)
+                                piece.add_move(move)
+
+                # king-side castle
+                # check to see if the right rook has moved
+                r_rook = self.tiles[row][7].piece
+                if isinstance(r_rook, Rook):
+                    if not r_rook.moved:
+                        for i in range(5, 7):
+                            if not self.tiles[row][i].empty_tile():
+                                break
+                            if i == 6:
+                                # add the r_rook to the king's atrributes
+                                piece.r_rook = r_rook
+                                # move rook
+                                initial = Tile(row, 7)
+                                chosen = Tile(row, 5)
+                                move = Move(initial, chosen)
+                                r_rook.add_move(move)
+                                # move king
+                                initial = Tile(row, col)
+                                chosen = Tile(row, 6)
+                                move = Move(initial, chosen)
+                                piece.add_move(move)
+
+
             # need to add check and checkmate
             # need to add stalemate
 
