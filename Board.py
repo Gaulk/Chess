@@ -578,14 +578,13 @@ class Board:
                         # find the initial tile and the chosen tile
                         initial = Tile(row, col)
                         chosen = Tile(pos_move_row, pos_move_col)
+
                         # make a move object
                         move = Move(initial, chosen)
                         # append the move if it doesn't put the king in check
                         if k_check:
                             if not self.king_check(piece, move):
                                 piece.add_move(move)
-                            else:
-                                break
                         else:
                             piece.add_move(move)
 
