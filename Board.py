@@ -51,10 +51,17 @@ class Chess_App:
                     clicked_row = drag.mouse_y // TILE
                     clicked_col = drag.mouse_x // TILE
 
-                    if board.tiles[clicked_row][clicked_col].piece_present:
+                    # if clicking on an empty tile, do nothing
+                    if not board.tiles[clicked_row][clicked_col].piece_present:
+                        # stack the board and pieces
+                        game.show_board(screen)
+                        game.show_pieces(screen)
+                        break
+
+                    elif board.tiles[clicked_row][clicked_col].piece_present:
                         piece = board.tiles[clicked_row][clicked_col].piece
                         # check to see if the piece is the same color as the turn
-                        if piece.color == game.player_color:
+                        if piece is not None and piece.color == game.player_color:
                             board.valid_moves(piece, clicked_row, clicked_col)
                             drag.initial_pos(event.pos)
                             drag.drag_piece(piece)
@@ -62,6 +69,7 @@ class Chess_App:
                             game.show_board(screen)
                             game.highlight_moves(screen)
                             game.show_pieces(screen)
+
                         
                 # allow for dragging, refresh piece and background
                 # when mouse is moved
@@ -89,6 +97,9 @@ class Chess_App:
                         if board.check_valid(drag.piece, move):
                             board.move_piece(drag.piece, move)
                             # stack the board and pieces
+                            
+                            board.legal_passant(drag.piece)
+
                             game.show_board(screen)
                             game.show_pieces(screen)
                             # change the turn
@@ -214,6 +225,7 @@ class Pawn(Piece):
         # white starts at the bottom and goes up (negative direction)
         # black starts at the top and goes down (positive direction)
         self.dir = -1 if color == 'white' else 1
+        self.en_passant = False
         super().__init__('pawn', color)
 
 
@@ -306,23 +318,32 @@ class Board:
         self.create_pieces('black')
 
 
-    def move_piece(self, piece, move):
+    def move_piece(self, piece, move, testing=False):
         initial = move.init_tile
         final = move.final_tile
+        
+        en_passant_tile = self.tiles[final.row][final.col].empty_tile()
 
         # update the board, remove the initial piece
         self.tiles[initial.row][initial.col].piece = None
         # add the piece to the final tile
         self.tiles[final.row][final.col].piece = piece
 
-        # method for pawn promotion
         if isinstance(piece, Pawn):
-            if final.row == 0 or final.row == 7:
+            # method for en passant
+            
+            diff = final.col - initial.col
+            if diff != 0 and en_passant_tile:
+                self.tiles[initial.row][initial.col + diff].piece = None
+                self.tiles[final.row][final.col].piece = piece
+
+            # method for pawn promotion
+            elif final.row == 0 or final.row == 7:
                 self.tiles[final.row][final.col].piece = Queen(piece.color)
 
         # method for castling
         if isinstance(piece, King):
-            if self.castle(initial, final):
+            if self.castle(initial, final) and not testing:
                 # check to see what direction the king is castling
                 diff = final.col - initial.col
                 if diff < 0:
@@ -343,6 +364,18 @@ class Board:
     def castle(self, initial, final):
         # check to see if the king is castling
         return abs (initial.col - final.col) == 2
+    
+    def legal_passant(self, piece):
+        
+        if not isinstance(piece, Pawn):
+            return
+        
+        for row in range(ROWS):
+            for col in range(COLS):
+                if isinstance(self.tiles[row][col].piece, Pawn):
+                    self.tiles[row][col].piece.en_passant = False
+
+        piece.en_passant = True
 
 
     def king_check(self, piece, move):
@@ -350,7 +383,7 @@ class Board:
         board_copy = copy.deepcopy(self)
         piece_copy = copy.deepcopy(piece)
         # move the piece on the board copy
-        board_copy.move_piece(piece_copy, move)
+        board_copy.move_piece(piece_copy, move, testing=True)
         # check to see if the king is in check
         for i in range(ROWS):
             for j in range(COLS):
@@ -483,12 +516,47 @@ class Board:
                             piece.add_move(move)
 
                     
-                    # check to see if the pawn can en passant
-                    # remember to write code for en passant
+            # code for en passant
+            if piece.color == 'white':
+                r_pawn = 3
+                final_row = 2
+            else:
+                r_pawn = 4
+                final_row = 5
+
+            # left en passant
+            if Tile.on_board(col - 1) and row == r_pawn:
+                if self.tiles[row][col - 1].enemy_present(piece.color):
+                    f_pawn = self.tiles[row][col - 1].piece
+                    if isinstance(f_pawn, Pawn):
+                        if f_pawn.en_passant:
+                            init_tile = Tile(row, col)
+                            final_tile = Tile(final_row, col - 1, f_pawn)
+                            move = Move(init_tile, final_tile)
                         
-                
-            
-                # remember to write code for en passant
+                            # check to see if the king is in check
+                            if k_check:
+                                if not self.king_check(piece, move):
+                                    piece.add_move(move)
+                            else:
+                                piece.add_move(move)
+
+            # right en passant
+            if Tile.on_board(col + 1) and row == r_pawn:
+                if self.tiles[row][col + 1].enemy_present(piece.color):
+                    f_pawn = self.tiles[row][col + 1].piece
+                    if isinstance(f_pawn, Pawn):
+                        if f_pawn.en_passant:
+                            init_tile = Tile(row, col)
+                            final_tile = Tile(final_row, col + 1, f_pawn)
+                            move = Move(init_tile, final_tile)
+                            
+                            # check to see if the king is in check
+                            if k_check:
+                                if not self.king_check(piece, move):
+                                    piece.add_move(move)
+                            else:
+                                piece.add_move(move)
                     
 
         elif isinstance(piece, Knight):
