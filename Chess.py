@@ -763,12 +763,12 @@ class Board:
                                 if k_check:
                                     if not self.king_check(piece, move_king) and not self.king_check(l_rook, move_rook):
                                         piece.add_move(move_king)
-                                        piece.add_move(move_rook)
+                                        l_rook.add_move(move_rook)
                                     else:
                                         break
                                 else:
                                     piece.add_move(move_king)
-                                    piece.add_move(move_rook)
+                                    l_rook.add_move(move_rook)
 
                 # king-side castle
                 # check to see if the right rook has moved
@@ -797,12 +797,12 @@ class Board:
                                 if k_check:
                                     if not self.king_check(piece, move_king) and not self.king_check(r_rook, move_rook):
                                         piece.add_move(move_king)
-                                        piece.add_move(move_rook)
+                                        r_rook.add_move(move_rook)
                                     else:
                                         break
                                 else:
                                     piece.add_move(move_king)
-                                    piece.add_move(move_rook)
+                                    r_rook.add_move(move_rook)
 
 
             # need to add check and checkmate
