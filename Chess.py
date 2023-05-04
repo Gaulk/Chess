@@ -51,6 +51,7 @@ class Chess_App:
         drag = self.game.drag
         board = self.game.board
 
+
         while True:
             # show the board and pieces
             game.show_board(screen)
@@ -125,8 +126,9 @@ class Chess_App:
                             game.change_turn()
                             game.get_state()
                             print(game.board.state)
+                            game.counter(self.game.count)
 
-                    drag.drop_piece()
+                    drag.drop_piece()        
 
                 # if 'r' is pressed, reset the game
                 elif event.type == pygame.KEYDOWN:
@@ -155,6 +157,7 @@ class Game:
         self.board = Board()
         self.drag = Drag()
         self.player_color = 'white'
+        self.count = 0
 
     # methods to show the board and objects
 
@@ -203,6 +206,16 @@ class Game:
                     color = (0, 122, 255) # dark blue
                 rect = (move.final_tile.col * TILE, move.final_tile.row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
+
+    def counter(self, count):
+        # counter for the number of moves made
+        # increment the count by 0.5 for white moves
+        # increment the count by 0.5 for black moves
+        if self.player_color == 'white':
+            self.count += 0.5
+        else:
+            self.count += 0.5
+        return count
 
     def get_state(self):
         self.board.state = ''
