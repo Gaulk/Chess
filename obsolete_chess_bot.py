@@ -623,12 +623,6 @@ class Board:
         # self.tiles[5][5] = Tile(5, 5, Rook('white'))
         # self.tiles[6][6] = Tile(6, 6, Queen('black'))
 
-    
-
-        # Create FEN notation
-        # this is a string notation for representing a chess board
-        # need to know en passant status as well as castling status
-        # keep track of half moves and full moves
 
 
                     

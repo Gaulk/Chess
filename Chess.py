@@ -4,6 +4,25 @@ It contains the classes for the board, tiles, pieces, moves, and drag.
 It also contains the main game loop.
 '''
 
+### Updates
+## State for RL and input to stockfish
+# who's turn it is (w/b) - khalil
+# can castle? binary both white and black - khalil
+# count number of half moves since pawn push/ capture?
+# count of total moves 0.5 per move
+# which piece can en passant - done
+
+## All possible moves per color/turn, used as actions for RL
+# Functtionality to make a move for RL
+# Functionality to determine reward via stockfish
+# class for bot (train and make move)
+
+## Checkmate - Khalil
+# select side feature
+    # choose if white or black, choose if playing bot, 2 bots? pvp?
+        # do this to train, don't need googoogaga human
+# stress test
+
 import pygame
 import sys
 import copy
@@ -104,6 +123,8 @@ class Chess_App:
                             game.show_pieces(screen)
                             # change the turn
                             game.change_turn()
+                            game.get_state()
+                            print(game.board.state)
 
                     drag.drop_piece()
 
@@ -183,6 +204,33 @@ class Game:
                 rect = (move.final_tile.col * TILE, move.final_tile.row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+    def get_state(self):
+        self.board.state = ''
+        
+        for row, _ in enumerate(self.board.tiles):
+            num_open = 0
+            for col, tile in enumerate(self.board.tiles[row]):
+                if tile.piece_present():
+                    if num_open != 0:
+                        self.board.state += str(num_open)
+                        num_open = 0
+                        self.board.state += tile.piece.FEN_notation
+                    else:
+                        self.board.state += tile.piece.FEN_notation
+                else:
+                    num_open += 1
+            if num_open != 0:
+                self.board.state += str(num_open)
+            if row < len(self.board.tiles)-1:
+                self.board.state += '/'
+
+        self.board.state += ' '
+
+        if self.player_color == 'white':
+            self.board.state += 'w'
+        else:
+            self.board.state += 'b'
+
 # method of changing tuns
     def change_turn(self):
         if self.player_color == 'black':
@@ -227,30 +275,50 @@ class Pawn(Piece):
         self.dir = -1 if color == 'white' else 1
         self.en_passant = False
         super().__init__('pawn', color)
+        if color == "white":
+            self.FEN_notation = "P"
+        else:
+            self.FEN_notation = "p"
 
 
 class Knight(Piece):
 
     def __init__(self, color):
         super().__init__('knight', color)
+        if color == "white":
+            self.FEN_notation = "N"
+        else:
+            self.FEN_notation = "n"
 
 
 class Bishop(Piece):
 
     def __init__(self, color):
         super().__init__('bishop', color)
+        if color == "white":
+            self.FEN_notation = "B"
+        else:
+            self.FEN_notation = "b"
 
 
 class Rook(Piece):
 
     def __init__(self, color):
         super().__init__('rook', color)
+        if color == "white":
+            self.FEN_notation = "R"
+        else:
+            self.FEN_notation = "r"
 
 
 class Queen(Piece):
 
     def __init__(self, color):
         super().__init__('queen', color)
+        if color == "white":
+            self.FEN_notation = "Q"
+        else:
+            self.FEN_notation = "q"
 
 
 class King(Piece):
@@ -261,6 +329,10 @@ class King(Piece):
         self.l_rook = None
         self.r_rook = None
         super().__init__('king', color)
+        if color == "white":
+            self.FEN_notation = "K"
+        else:
+            self.FEN_notation = "k"
 
 
 class Tile:
@@ -316,6 +388,7 @@ class Board:
         self.create_board()
         self.create_pieces('white')
         self.create_pieces('black')
+        self.state = ""
 
 
     def move_piece(self, piece, move, testing=False):
@@ -829,7 +902,44 @@ class Move:
     def __eq__(self, other):
         return self.init_tile == other.init_tile and self.final_tile == other.final_tile
 
+class Bot:
+    def __init__(self, model_file=None):
+        self.file = model_file
+        
+    def train_model():
+        # reset
+            # Khalil made a reset function
+        
+        # reward
+            # manual put into chess.com
+            # use algorithm to calculate score of position
+        # play(action)
+        pass
+
+    def save_model():
+        # save the trained model
+        pass
+
+    def make_move():
+        # use saved model and mave a move for the game
+        pass
 
 if __name__ == '__main__':
     chess = Chess_App()
     chess.run()
+
+    # import chess
+    # import chess.engine
+
+    # # Change this if stockfish is somewhere else
+    # engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
+
+    # # The position represented in FEN
+    # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+
+    # # Limit our search so it doesn't run forever
+    # info = engine.analyse(board, chess.engine.Limit(depth=20))
+
+    # print("getting info")
+    # print(info)
+    # print("info got")
