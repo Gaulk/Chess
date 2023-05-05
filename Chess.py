@@ -26,6 +26,13 @@ It also contains the main game loop.
 import pygame
 import sys
 import copy
+import random
+import time
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
 
 # Screen dimensions
 WIDTH = 800
@@ -150,6 +157,16 @@ class Chess_App:
                             # change the turn
                             game.change_turn()
                             game.get_state()
+
+                            game.state_tensor()
+                            # print(game.board.state)
+                            game.board.all_valid_moves('white')
+                            # print(game.board.white_moves)
+                            # model = ChessAI()
+                            # output = model(game.board.tensor, len(game.board.white_moves))
+                            # print(output.shape)
+                            
+                            # kept from khalil
                             print(game.board.state)
                             game.counter(self.game.count)
 
@@ -171,6 +188,71 @@ class Chess_App:
                     pygame.quit()
                     sys.exit()
             
+            # update the display after every event
+            pygame.display.update()
+
+    def train(self):
+        screen = self.screen
+        game = self.game
+        board = self.game.board
+
+        while True:
+            # show the board and pieces
+            game.show_board(screen)
+            game.highlight_moves(screen)
+            game.show_pieces(screen)
+
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    # if 'r' is pressed, reset the game
+                    if event.key == pygame.K_r:
+                        game.reset_game()
+                        game = self.game
+                        board = self.game.board
+
+                    # if 'n' is pressed, make a move for white and black
+                    elif event.key == pygame.K_n:
+                        while True:
+                            board.all_valid_moves('white')
+                            # print(board.white_moves)
+                            move_white = random.choice(game.board.white_moves)
+                            piece_white = board.tiles[move_white.init_tile.row][move_white.init_tile.col].piece
+                            print(move_white.init_tile.row, move_white.init_tile.col)
+                            print(move_white.final_tile.row, move_white.final_tile.col)
+                            print(piece_white)
+                            game.state_tensor()
+                            # print(board.tensor)
+                            board.move_piece(piece_white, move_white)
+                            move_white.init_tile.clear_piece()
+                            game.change_turn()
+                            print("white move")
+
+                            game.show_board(screen)
+                            game.show_pieces(screen)
+                            pygame.display.update()
+
+                            board.all_valid_moves('black')
+                            # print(board.black_moves)
+                            move_black = random.choice(game.board.black_moves)
+                            piece_black = board.tiles[move_black.init_tile.row][move_black.init_tile.col].piece
+                            print(move_black.init_tile.row, move_black.init_tile.col)
+                            print(move_black.final_tile.row, move_black.final_tile.col)
+                            print(piece_black)
+                            game.state_tensor()
+                            # print(board.tensor)
+                            board.move_piece(piece_black, move_black)
+                            move_black.init_tile.clear_piece()
+                            game.change_turn()
+                            print("black move")
+
+                            game.show_board(screen)
+                            game.show_pieces(screen)
+                            pygame.display.update()
+                
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
             # update the display after every event
             pygame.display.update()
 
@@ -205,6 +287,7 @@ class Game:
         # initialize the board using the board class
         self.board = Board()
         self.drag = Drag()
+        self.ChessAI = ChessAI()
         self.player_color = 'white'
         self.count = 0
 
@@ -337,7 +420,29 @@ class Game:
         else:
             self.board.state += 'b'
 
+    def state_tensor(self):
+        self.board.tensor = torch.zeros((6,8,8), dtype=torch.float)
+        piece_dict = {
+            'pawn': 0,
+            'rook': 1,
+            'knight': 2,
+            'bishop': 3,
+            'queen': 4,
+            'king': 5
+        }
 
+        for row, _ in enumerate(self.board.tiles):
+            for col, tile in enumerate(self.board.tiles[row]):
+                if tile.piece_present():
+                    if tile.piece.color == 'white':
+                            self.board.tensor[piece_dict[tile.piece.name],row,col] = 1
+                    elif tile.piece.color == 'black':
+                            self.board.tensor[piece_dict[tile.piece.name],row,col] = -1
+
+
+
+
+# method of changing tuns
     def change_turn(self):
         '''
         This method changes the turn
@@ -667,6 +772,9 @@ class Tile:
         '''
         if not self.piece_present():
             return True
+        
+    def clear_piece(self):
+        self.piece = None
 
 
     def moveable_square(self, color):
@@ -746,8 +854,10 @@ class Board:
         self.create_pieces('white')
         self.create_pieces('black')
         self.state = ""
-
-
+        self.tensor = torch.zeros((6,8,8), dtype=torch.int)
+        self.white_moves = []
+        self.black_moves = []
+    
     def move_piece(self, piece, move, testing=False):
         '''
         Moves a piece on the board object between two tiles
@@ -1222,6 +1332,30 @@ class Board:
             # need to add check and checkmate
             # need to add stalemate
 
+    def all_valid_moves(self, color):
+        self.white_moves = []
+        self.black_moves = []
+        
+        for row, _ in enumerate(self.tiles):
+            for col, tile in enumerate(self.tiles[row]):
+                if tile.piece_present() and tile.piece.color == color:
+                    piece = tile.piece
+                    self.valid_moves(piece, row, col)
+                    for move in piece.moves:
+                        # move_coordinates = ((move.init_tile.row, move.init_tile.col), 
+                        #                     (move.final_tile.row, move.final_tile.col))
+                        if color == 'white':
+                            self.white_moves.append(move)
+                        elif color == 'black':
+                            self.black_moves.append(move)
+                        piece.clear_moves()
+
+        # while len(self.white_moves) != 4096 and len(self.black_moves) != 4096:
+        #     if len(self.white_moves) != 0:
+        #         self.white_moves.append(((0,0),(0,0)))
+        #     elif len(self.black_moves) != 0:
+        #         self.black_moves.append(((0,0),(0,0)))
+        
 
     def create_board(self):
         '''
@@ -1424,18 +1558,41 @@ class Move:
 
         return self.init_tile == other.init_tile and self.final_tile == other.final_tile
 
+class ChessAI(nn.Module):
+    def __init__(self, model_file=None, num_actions=4096):
+        super(ChessAI, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=6, out_channels=32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1)
+        self.fc1 = nn.Linear(in_features=128 * 8 * 8, out_features=256)
+        self.fc2 = nn.Linear(in_features=256, out_features=num_actions)
 
-class Bot:
-    def __init__(self, model_file=None):
         self.file = model_file
-        
+
+    def forward(self, state_tensor, num_moves):
+        state_tensor = state_tensor.unsqueeze(0)
+        state_tensor = F.relu(self.conv1(state_tensor))
+        state_tensor = F.relu(self.conv2(state_tensor))
+        state_tensor = F.relu(self.conv3(state_tensor))
+        state_tensor = state_tensor.view(-1, 128 * 8 * 8)
+        state_tensor = F.relu(self.fc1(state_tensor))
+        state_tensor = self.fc2(state_tensor)
+
+        # Resize output tensor to match the number of possible moves
+        state_tensor = state_tensor.view(-1, num_moves)
+
+        return F.softmax(state_tensor, dim=1)
+    
     def train_model():
         # reset
             # Khalil made a reset function
         
         # reward
-            # manual put into chess.com
             # use algorithm to calculate score of position
+
+        # game over function
+            # checkmate or stalemate
+        
         # play(action)
         pass
 
@@ -1449,7 +1606,8 @@ class Bot:
 
 if __name__ == '__main__':
     chess = Chess_App()
-    chess.run()
+    # chess.run()
+    chess.train()
 
     # import chess
     # import chess.engine
@@ -1458,11 +1616,18 @@ if __name__ == '__main__':
     # engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
 
     # # The position represented in FEN
-    # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+    # # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+    # board = chess.Board("r1b1k1nr/pppp1ppp/2n5/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1")
+    
 
     # # Limit our search so it doesn't run forever
     # info = engine.analyse(board, chess.engine.Limit(depth=20))
 
+    # # Get the centipawn score from the evaluation
+    # score = info["score"].relative.score(mate_score=100000) / 100
+
     # print("getting info")
-    # print(info)
-    # print("info got")
+    # print(f"Centipawn score: {score}")
+    # print("info got")  
+
+    # engine.close()
