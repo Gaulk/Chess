@@ -43,15 +43,42 @@ ROWS = 8
 COLS = 8
 TILE = WIDTH // COLS
 
+
 class Chess_App:
+    '''
+    This class contains the main game loop
+    **Attributes**
+        # screen - the screen object
+        # game - the game object
+    **Methods**
+        # __init__ - initializes the game
+        # run - runs the main game loop
+    '''
 
     def __init__(self):
+        '''
+        This method initializes the game
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Carter and Khalil's Cool Chess")
         self.game = Game()
 
+
     def run(self):
+        '''
+        This method runs the main game loop, displaying the board and pieces
+        and allowing for user input.
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
 
         screen = self.screen
         game = self.game
@@ -96,7 +123,6 @@ class Chess_App:
                             game.highlight_moves(screen)
                             game.show_pieces(screen)
 
-                        
                 # allow for dragging, refresh piece and background
                 # when mouse is moved
                 elif event.type == pygame.MOUSEMOTION:
@@ -131,6 +157,7 @@ class Chess_App:
                             # change the turn
                             game.change_turn()
                             game.get_state()
+
                             game.state_tensor()
                             # print(game.board.state)
                             game.board.all_valid_moves('white')
@@ -138,9 +165,12 @@ class Chess_App:
                             # model = ChessAI()
                             # output = model(game.board.tensor, len(game.board.white_moves))
                             # print(output.shape)
+                            
+                            # kept from khalil
+                            print(game.board.state)
+                            game.counter(self.game.count)
 
-
-                    drag.drop_piece()
+                    drag.drop_piece()        
 
                 # if 'r' is pressed, reset the game
                 elif event.type == pygame.KEYDOWN:
@@ -228,17 +258,49 @@ class Chess_App:
 
 
 class Game:
+    '''
+    This class contains the game logic
+    **Attributes**
+        # board - the board object that contains the tiles
+        # drag - the drag object
+        # player_color - the color of the player
+        # count - the number of moves
+    **Methods**
+        # show_board - shows the board
+        # show_pieces - shows the pieces
+        # highlight_moves - highlights the valid moves
+        # change_turn - changes the turn
+        # reset_game - resets the game
+        # get_state - gets the state of the board
+        # counter - counts the number of moves
+    '''
 
     def __init__(self):
+        '''
+        This method initializes the game
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         # initialize the board using the board class
         self.board = Board()
         self.drag = Drag()
         self.ChessAI = ChessAI()
         self.player_color = 'white'
+        self.count = 0
 
-    # methods to show the board and objects
 
     def show_board(self, surface):
+        '''
+        This method shows the board
+        **Parameters**
+            # surface: *pygame.Surface* - the surface to draw on
+        **Returns**
+            # none
+        '''
+
         for row in range(ROWS):
             for col in range(COLS):
                 # set color of tile
@@ -253,7 +315,16 @@ class Game:
                 rect = (col * TILE, row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+
     def show_pieces(self, surface):
+        '''
+        This method shows the pieces
+        **Parameters**
+            # surface: *pygame.Surface*, the surface to draw on
+        **Returns**
+            # none
+        '''
+
         for row in range(ROWS):
             for col in range(COLS):
                 # check to see if the tile has a piece
@@ -272,7 +343,16 @@ class Game:
                         # draw the image on the surface
                         surface.blit(img, piece.img_rect)
 
+
     def highlight_moves(self, surface):
+        '''
+        This method highlights the valid moves
+        **Parameters**
+            # surface: *pygame.Surface*, the surface to draw on
+        **Returns**
+            # none
+        '''
+
         if self.drag.dragging:
             piece = self.drag.piece
             for move in piece.moves:
@@ -284,7 +364,36 @@ class Game:
                 rect = (move.final_tile.col * TILE, move.final_tile.row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+    def counter(self, count):
+        '''
+        This method counts the number of moves made
+        moves increment by 0.5 for every move made
+        thus after both players have made a move, the count will increment by 1
+        **Parameters**
+            # count: *float*, 0 at the start of the game
+        **Returns**
+            # count: *float*, the number of moves
+        '''
+
+        # counter for the number of moves made
+        # increment the count by 0.5 for white moves
+        # increment the count by 0.5 for black moves
+        if self.player_color == 'white':
+            self.count += 0.5
+        else:
+            self.count += 0.5
+        return count
+
+
     def get_state(self):
+        '''
+        This method gets the state of the board
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         self.board.state = ''
         
         for row, _ in enumerate(self.board.tiles):
@@ -335,21 +444,61 @@ class Game:
 
 # method of changing tuns
     def change_turn(self):
+        '''
+        This method changes the turn
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         if self.player_color == 'black':
             self.player_color = 'white'
         else:
             self.player_color = 'black'
 
-# create a method to reset the game
+
     def reset_game(self):
+        '''
+        This method resets the game
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         self.__init__()
 
 
-# create the super class for pieces
-# pieces have name and colour and an image
 class Piece:
+    '''
+    This is a super class that represents any piece
+    **Attributes**
+        # name - the name of the piece (pawn, rook, knight, bishop, queen, king)
+        # color - the color of the piece (white, black)
+        # moves - the valid moves the piece can make
+        # moved - whether or not the piece has moved
+        # img - the file name image of the piece
+        # img_rect - the rectangle of the image of the piece
+    **Methods**
+        # __init__ - the constructor for the Piece class
+        # set_img - sets the image of the piece
+        # add_move - adds a move to the piece
+        # clear_moves - clears the moves of the piece
+    '''
 
     def __init__(self, name, color, img=None, img_rect=None):
+        '''
+        This is the constructor for the Piece class
+        **Parameters**
+            # name: *str*, the name of the piece (pawn, rook, knight, bishop, queen, king)
+            # color: *str*, the color of the piece (white, black)
+            # img: *str*, the file name image of the piece
+            # img_rect: *pygame.RectValue* the rectangle of the image of the piece
+        **Returns**
+            # none
+        '''
+
         self.name = name
         self.color = color
         self.moves = []
@@ -358,20 +507,65 @@ class Piece:
         self.set_img()
         self.img_rect = img_rect
 
+
     def set_img(self):
+        '''
+        This method sets the image of the piece
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         self.img = f'{self.color[0]}{self.name}.png'
 
+
     def add_move(self, move):
+        '''
+        This method adds a valid move to the piece
+        **Parameters**
+            # move - the move to add
+        **Returns**
+            # none
+        '''
+
         self.moves.append(move)
 
+
     def clear_moves(self):
+        '''
+        This method clears the moves of the piece
+        **Parameters**
+            # none
+        **Returns**
+            # moves: *lst*, an empty list of moves
+        '''
+
         self.moves = []
 
 
 # create the children of the piece class, one for each piece
 class Pawn(Piece):
+    '''
+    This class represents a pawn, which is a child of the Piece class
+    **Attributes**
+        # dir - the direction the pawn can move
+        # en_passant - whether or not the pawn can be taken en passant
+        # FEN_notation - the FEN notation for the pawn
+        # inherited from Piece
+    **Methods**
+        # none
+    '''
 
     def __init__(self, color):
+        '''
+        This is the constructor for the Pawn class
+        **Parameters**
+            # color: *str*, the color of the pawn (white, black)
+        **Returns**
+            # none
+        '''
+
         # pawns only have one direction
         # white starts at the bottom and goes up (negative direction)
         # black starts at the top and goes down (positive direction)
@@ -385,8 +579,24 @@ class Pawn(Piece):
 
 
 class Knight(Piece):
+    '''
+    This class represents a knight, which is a child of the Piece class
+    **Attributes**
+        # none, but inherits from Piece
+        # FEN_notation: *str*, the FEN notation of the knight
+    **Methods**
+        # none
+    '''
 
     def __init__(self, color):
+        '''
+        This is the constructor for the Knight class
+        **Parameters**
+            # color: *str*, the color of the knight (white, black)
+        **Returns**
+            # none
+        '''
+
         super().__init__('knight', color)
         if color == "white":
             self.FEN_notation = "N"
@@ -395,8 +605,24 @@ class Knight(Piece):
 
 
 class Bishop(Piece):
+    '''
+    This class represents a bishop, which is a child of the Piece class
+    **Attributes**
+        # none, but inherits from Piece
+        # FEN_notation, *str* - the FEN notation of the bishop
+    **Methods**
+        # none
+    '''
 
     def __init__(self, color):
+        '''
+        This is the constructor for the Bishop class
+        **Parameters**
+            # color: *str*, the color of the bishop (white, black)
+        **Returns**
+            # none
+        '''
+
         super().__init__('bishop', color)
         if color == "white":
             self.FEN_notation = "B"
@@ -405,8 +631,24 @@ class Bishop(Piece):
 
 
 class Rook(Piece):
+    '''
+    This class represents a rook, which is a child of the Piece class
+    **Attributes**
+        # none, but inherits from Piece
+        # FEN_notation: *str*, the FEN notation of the rook
+    **Methods**
+        # none
+    '''
 
     def __init__(self, color):
+        '''
+        This is the constructor for the Rook class
+        **Parameters**
+            # color: *str*, the color of the rook (white, black)
+        **Returns**
+            # none
+        '''
+
         super().__init__('rook', color)
         if color == "white":
             self.FEN_notation = "R"
@@ -415,8 +657,23 @@ class Rook(Piece):
 
 
 class Queen(Piece):
+    '''
+    This class represents a queen, which is a child of the Piece class
+    **Attributes**
+        # none, but inherits from Piece
+        # FEN_notation, *str* the FEN notation of the queen
+    **Methods**
+        # none
+    '''
 
     def __init__(self, color):
+        '''
+        This is the constructor for the Queen class
+        **Parameters**
+            # color, *str*, the color of the queen (white, black)
+        **Returns**
+            # none
+        '''
         super().__init__('queen', color)
         if color == "white":
             self.FEN_notation = "Q"
@@ -425,8 +682,23 @@ class Queen(Piece):
 
 
 class King(Piece):
+    '''
+    This class represents a king, which is a child of the Piece class
+    **Attributes**
+        # none, but inherits from Piece
+        # FEN_notation: *str*, the FEN notation of the king
+    **Methods**
+        # none
+    '''
 
     def __init__(self, color):
+        '''
+        This is the constructor for the King class
+        **Parameters**
+            # color: *str*, the color of the king (white, black)
+        **Returns**
+            # none
+        '''
         # rooks are added as attributes of the king
         # this will be used for castling
         self.l_rook = None
@@ -439,48 +711,116 @@ class King(Piece):
 
 
 class Tile:
+    '''
+    This class represents a tile on the board
+    **Attributes**
+        # row: *int*, the row of the tile
+        # col: *int*, the column of the tile
+        # piece: *Piece obj* the piece on the tile
+    **Methods**
+        # __init__: *constructor*, creates a new tile
+        # piece_present: *bool*, checks to see if a piece is present on the tile
+    '''
 
     def __init__(self, row, col, piece=None):
+        '''
+        This is the constructor for the Tile class
+        **Parameters**
+            # row: *int*, the row of the tile
+            # col: *int*, the column of the tile
+            # piece: *Piece obj*, the piece on the tile
+        **Returns**
+            # none
+        '''
         self.row = row
         self.col = col
         self.piece = piece
 
+
     def __eq__(self, other):
+        '''
+        Allows for the comparison of two tiles
+        **Parameters**
+            # other: *Tile obj* - the other tile to compare to
+        **Returns**
+            # *bool* - True if the tiles are equal, False otherwise
+        '''
+
         return self.row == other.row and self.col == other.col
 
-    # function to check if a tile has a piece
+
     def piece_present(self):
+        '''
+        Checks to see if a piece is present on the tile
+        **Parameters**
+            # none
+        **Returns**
+            # *bool* - True if a piece is present, False otherwise
+        '''
         if self.piece != None:
             return True
         else:
             return False
 
     def empty_tile(self):
+        '''
+        Checks to see if a tile is empty
+        **Parameters**
+            # none
+        **Returns**
+            # *bool* - True if the tile is empty, False otherwise
+        '''
         if not self.piece_present():
             return True
         
     def clear_piece(self):
         self.piece = None
 
-    # check to see if the square is an empty or
-    # contains an enemy piece
+
     def moveable_square(self, color):
-        # check to see if no piece present
-        # check to see if enemy piece present
+        '''
+        Checks to see if a square is either empty or has an enemy piece
+        **Parameters**
+            # color: *str*, the color of the piece that is moving
+        **Returns**
+            # *bool* - True if the square is empty or has an enemy piece, False otherwise
+        '''
+
         if not self.piece_present() or self.enemy_present(color):
             return True
 
-    # check to see if the piece in the tile is an enemy piece
+
     def enemy_present(self, color):
+        '''
+        Checks to see if an enemy piece is present on the tile
+        **Parameters**
+            # color: *str*, the color of the piece that is moving
+        **Returns**
+            # *bool* - True if an enemy piece is present, False otherwise
+        '''
         return self.piece_present() and self.piece.color != color
     
-    # check to see if the piece in the tile is a friendly piece
+
     def friendly_present(self, color):
+        '''
+        Checks to see if a friendly piece is present on the tile
+        **Parameters**
+            # color: *str*, the color of the piece that is moving
+        **Returns**
+            # *bool* - True if a friendly piece is present, False otherwise
+        '''
         return self.piece_present() and self.piece.color == color
 
-# use a static method to check if a position is on the board 
+
     @staticmethod
     def on_board(*args):
+        '''
+        Checks to see if a position is on the board
+        **Parameters**
+            # *args: *int*, the position to check
+        **Returns**
+            # *bool* - True if the position is on the board, False otherwise
+        '''
         for arg in args:
             if arg < 0 or arg > 7:
                 return False
@@ -488,8 +828,27 @@ class Tile:
 
 
 class Board:
+    '''
+    This class represents the board
+    **Attributes**
+        # tiles: a 2D list of tile objects
+        # state: the state of the board that uses FEN notation to represent the board
+    **Methods**
+        # __init__: constructor for the Board class
+        # create_board: creates the board object
+        # create_pieces: creates the piece objects
+        # move_piece: moves a piece on the board object between two tiles
+    '''
 
     def __init__(self):
+        '''
+        This is the constructor for the Board class
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         self.tiles = [[0, 0, 0, 0, 0, 0, 0, 0] for col in range(COLS)]
         self.create_board()
         self.create_pieces('white')
@@ -500,6 +859,16 @@ class Board:
         self.black_moves = []
     
     def move_piece(self, piece, move, testing=False):
+        '''
+        Moves a piece on the board object between two tiles
+        **Parameters**
+            # piece: *Piece obj*, the piece to move
+            # move: *Move obj*, the move to make
+            # testing: *bool*, True if the move is being made for testing, False otherwise
+        **Returns**
+            # none
+        '''
+
         initial = move.init_tile
         final = move.final_tile
         
@@ -543,10 +912,27 @@ class Board:
 
 
     def castle(self, initial, final):
+        '''
+        Checks to see if the king is castling
+        **Parameters**
+            # initial: *Tile obj*, the initial tile of the king
+            # final: *Tile obj*, the final tile of the king
+        **Returns**
+            # *bool* - True if the king is castling, False otherwise
+        '''
+
         # check to see if the king is castling
-        return abs (initial.col - final.col) == 2
+        return abs(initial.col - final.col) == 2
     
     def legal_passant(self, piece):
+        '''
+        Checks to see if the en passant move is legal
+        **Parameters**
+            # piece: *Piece obj*, the piece to move
+        **Returns**
+            # *bool*: True if the en passant move is legal, False otherwise
+            # en_passant: *bool*, changes the en passant attribute of the pawn
+        '''
         
         if not isinstance(piece, Pawn):
             return
@@ -560,6 +946,15 @@ class Board:
 
 
     def king_check(self, piece, move):
+        '''
+        Checks to see if the king is in check
+        **Parameters**
+            # piece: *Piece obj*, the piece to move
+            # move: *Move obj*, the move to make
+        **Returns**
+            # *bool*: True if the king is in check, False otherwise
+        '''
+
         # create a board copy
         board_copy = copy.deepcopy(self)
         piece_copy = copy.deepcopy(piece)
@@ -581,15 +976,37 @@ class Board:
 
 
     def check_valid(self, piece, move):
+        '''
+        Checks to see if the move is valid
+        **Parameters**
+            # piece: *Piece obj*, the piece to move
+            # move: *Move obj*, the move to make
+        **Returns**
+            # *bool*: True if the move is in the list of moves for a piece, False otherwise
+        '''
         return move in piece.moves
 
 
     def valid_moves(self, piece, row, col, k_check=True):
-        # determines what moves are valid for a piece
-        # returns a list of valid moves
-        # add carter's code for legal moves
+        '''
+        Generates the valid moves for a piece
+        **Parameters**
+            # piece: *Piece obj*, the piece to move
+            # row: *int*, the row of the piece
+            # col: *int*, the column of the piece
+            # k_check: *bool*, True if the king is in check, False otherwise
+        **Returns**
+            # piece.moves: *lst*, the list of valid moves for a piece
+        '''
 
         def iterate_moves(directions):
+            '''
+            Iterates through the directions of a piece for pieces that move in a straight line
+            **Parameters**
+                # directions: *lst*, the list of directions for a piece
+            **Returns**
+                # none
+            '''
             for direction in directions:
                     row_dir, col_dir = direction
                     pos_move_row = row + row_dir
@@ -741,7 +1158,6 @@ class Board:
                     
 
         elif isinstance(piece, Knight):
-        # BUG with knight not looking through all options when in check
             knight_moves = [
                 (row + 2, col + 1),
                 (row + 2, col - 1),
@@ -871,12 +1287,12 @@ class Board:
                                 if k_check:
                                     if not self.king_check(piece, move_king) and not self.king_check(l_rook, move_rook):
                                         piece.add_move(move_king)
-                                        piece.add_move(move_rook)
+                                        l_rook.add_move(move_rook)
                                     else:
                                         break
                                 else:
                                     piece.add_move(move_king)
-                                    piece.add_move(move_rook)
+                                    l_rook.add_move(move_rook)
 
                 # king-side castle
                 # check to see if the right rook has moved
@@ -905,12 +1321,12 @@ class Board:
                                 if k_check:
                                     if not self.king_check(piece, move_king) and not self.king_check(r_rook, move_rook):
                                         piece.add_move(move_king)
-                                        piece.add_move(move_rook)
+                                        r_rook.add_move(move_rook)
                                     else:
                                         break
                                 else:
                                     piece.add_move(move_king)
-                                    piece.add_move(move_rook)
+                                    r_rook.add_move(move_rook)
 
 
             # need to add check and checkmate
@@ -942,11 +1358,28 @@ class Board:
         
 
     def create_board(self):
+        '''
+        Creates the board with tiles
+        **Parameters**
+            None
+        **Returns**
+            tiles: *list, list, Tile*, a 2D list of Tile objects
+        '''
+
         for row in range(ROWS):
             for col in range(COLS):
                 self.tiles[row][col] = Tile(row, col)
 
+
     def create_pieces(self, color):
+        '''
+        Creates the pieces for the board
+        **Parameters**
+            color: *str*, the color of the pieces
+        **Returns**
+            None
+        '''
+
         # white pieces will be on the front 2 rows
         # black pieces will be on the back 2 rows
         if color == 'white':
@@ -985,8 +1418,30 @@ class Board:
 
 
 class Drag:
+    '''
+    Class to handle the dragging of pieces
+    **Attributes**
+        mouse_x: *int*, the x coordinate of the mouse
+        mouse_y: *int*, the y coordinate of the mouse
+        init_col: *int*, the initial column of the piece
+        init_row: *int*, the initial row of the piece
+        piece: *Piece*, the piece that is being dragged
+        dragging: *bool*, whether or not the piece is being dragged
+    **Methods**
+        __init__: constructor for the Drag class
+        update_blit: updates the image when its being dragged
+        update_mouse: updates the mouse position
+    '''
 
     def __init__(self):
+        '''
+        Constructor for the Drag class
+        **Parameters**
+            None
+        **Returns**
+            None
+        '''
+
         self.mouse_x = 0
         self.mouse_y = 0
         self.init_col = 0
@@ -994,8 +1449,16 @@ class Drag:
         self.piece = None
         self.dragging = False
 
-    # function to update the image when its being dragged
+
     def update_blit(self, surface):
+        '''
+        Updates the image when its being dragged
+        **Parameters**
+            surface: *pygame.Surface*, the surface to blit the image on
+        **Returns**
+            None
+        '''
+
         # load the correct image
         img_path = self.piece.img
         img = pygame.image.load(img_path)
@@ -1007,31 +1470,92 @@ class Drag:
 
 
     def update_mouse(self, pos):
+        '''
+        Updates the mouse position when the mouse is moved
+        **Parameters**
+            pos: *tuple, int, int*, the position of the mouse (x, y)
+        **Returns**
+            None
+        '''
+
         # position is a tuple representing coordinates of the mouse
         self.mouse_x = pos[0]
         self.mouse_y = pos[1]
 
+
     def initial_pos(self, pos):
+        '''
+        Initializes the initial position of the piece
+        **Parameters**
+            pos: *tuple, int, int*, the position of the mouse (x, y)
+        **Returns**
+            None
+        '''
+
         self.init_col = pos[0] // TILE
         self.init_row = pos[1] // TILE
 
+
     def drag_piece(self, piece):
+        '''
+        Function to determine if a piece is being dragged
+        **Parameters**
+            piece: *Piece obj*, the piece object that is being dragged
+        **Returns**
+            none
+        '''
+
         self.piece = piece
         self.dragging = True
 
+
     def drop_piece(self):
+        '''
+        Function to drop the piece
+        **Parameters**
+            None
+        **Returns**
+            None
+        '''
+
         self.piece = None
         self.dragging = False
 
 
 class Move:
+    '''
+    Class to handle moving pieces between tiles
+    **Attributes**
+        init_tile: *Tile*, the initial tile of the piece
+        final_tile: *Tile*, the final tile of the piece
+    **Methods**
+        __init__: constructor for the Move class
+        __eq__: determines if two moves are equal
+    '''
 
     def __init__(self, init_tile, final_tile):
-        # the arguments are tile objects
+        '''
+        Constructor for the Move class
+        **Parameters**
+            init_tile: *Tile*, the initial Tile object of the piece
+            final_tile: *Tile*, the final Tile object of the piece
+        **Returns**
+            None
+        '''
+
         self.init_tile = init_tile 
         self.final_tile = final_tile
 
+
     def __eq__(self, other):
+        '''
+        Equality function for the Move class
+        **Parameters**
+            other: *Move*, the other Move object to compare to
+        **Returns**
+            *bool*, whether or not the Move objects are equal
+        '''
+
         return self.init_tile == other.init_tile and self.final_tile == other.final_tile
 
 class ChessAI(nn.Module):
