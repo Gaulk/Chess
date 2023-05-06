@@ -152,6 +152,36 @@ class Game:
                 rect = (col * TILE, row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+                # draw row label
+                row_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
+
+                if col == 0:
+                    # make light grey font for dark brown tiles, dark grey font for light brown tiles
+                    if row % 2 == 0:
+                        color = (128, 128, 128) # dark grey
+                    else:
+                        color = (192, 192, 192) # light grey
+                    # create label
+                    row_lbl = row_lbl_font.render(str(ROWS - row), True, color)
+                    row_lbl_pos = (5, 5 + row * TILE)
+                    # draw lab
+                    surface.blit(row_lbl, row_lbl_pos)
+
+                # draw column label
+                col_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
+                # make light grey font for dark brown tiles, dark grey font for light brown tiles
+                if row == 7:
+                    if col % 2 == 0:
+                        color = (192, 192, 192)
+                    else:
+                        color = (128, 128, 128)
+                    # create label
+                    col_lbl = col_lbl_font.render(Tile.get_col_lett(col), True, color)
+                    col_lbl_pos = (col * TILE + TILE - 20, HEIGHT - 20)
+                    # draw label
+                    surface.blit(col_lbl, col_lbl_pos)
+
+
     def show_pieces(self, surface):
         for row in range(ROWS):
             for col in range(COLS):
@@ -265,10 +295,22 @@ class King(Piece):
 
 class Tile:
 
+    # dictionary of column letters
+    COL_LETT = {0: 'A', 
+                1: 'B', 
+                2: 'C', 
+                3: 'D', 
+                4: 'E',
+                5: 'F',
+                6: 'G',
+                7: 'H'
+                }
+
     def __init__(self, row, col, piece=None):
         self.row = row
         self.col = col
         self.piece = piece
+        self.COL_LETT = self.COL_LETT[col]
 
     def __eq__(self, other):
         return self.row == other.row and self.col == other.col
@@ -307,6 +349,10 @@ class Tile:
             if arg < 0 or arg > 7:
                 return False
         return True
+    
+    @staticmethod
+    def get_col_lett(col):
+        return Tile.COL_LETT[col]
 
 
 class Board:
