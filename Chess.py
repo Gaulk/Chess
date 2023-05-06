@@ -73,7 +73,7 @@ class Chess_App:
         self.game = Game()
 
 
-    def run(self):
+    def run(self, type_of_game):
         '''
         This method runs the main game loop, displaying the board and pieces
         and allowing for user input.
@@ -87,117 +87,115 @@ class Chess_App:
         game = self.game
         drag = self.game.drag
         board = self.game.board
+        self.game.type_of_game = type_of_game
 
-        while True:
-            # show the board and pieces
-            game.show_board(screen)
-            game.highlight_moves(screen)
-            game.show_pieces(screen)
+        if self.game.type_of_game == 'PVP':
+            while True:
+                # show the board and pieces
+                game.show_board(screen)
+                game.highlight_moves(screen)
+                game.show_pieces(screen)
+                if game.endgame:
+                    game.show_endgame(screen)
 
-            if drag.dragging:
-                drag.update_blit(screen)
+                if drag.dragging:
+                    drag.update_blit(screen)
 
-            # quit application if user clicks the X
-            for event in pygame.event.get():
+                # quit application if user clicks the X
+                for event in pygame.event.get():
 
-                # allows for clicks
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    drag.update_mouse(event.pos)
-                    # check to see if the position of the mouse is on a piece
-                    clicked_row = drag.mouse_y // TILE
-                    clicked_col = drag.mouse_x // TILE
+                    # allows for clicks
+                    if event.type == pygame.MOUSEBUTTONDOWN and not game.endgame:
+                        drag.update_mouse(event.pos)
+                        # check to see if the position of the mouse is on a piece
+                        clicked_row = drag.mouse_y // TILE
+                        clicked_col = drag.mouse_x // TILE
 
-                    # if clicking on an empty tile, do nothing
-                    if not board.tiles[clicked_row][clicked_col].piece_present:
-                        # stack the board and pieces
-                        game.show_board(screen)
-                        game.show_pieces(screen)
-                        break
+                        # if clicking on an empty tile, do nothing
+                        if not board.tiles[clicked_row][clicked_col].piece_present:
+                            # stack the board and pieces
+                            game.show_board(screen)
+                            game.show_pieces(screen)
+                            break
 
-                    elif board.tiles[clicked_row][clicked_col].piece_present:
-                        piece = board.tiles[clicked_row][clicked_col].piece
-                        # check to see if the piece is the same color as the turn
-                        if piece is not None and piece.color == game.player_color:
-                            board.valid_moves(piece, clicked_row, clicked_col)
-                            drag.initial_pos(event.pos)
-                            drag.drag_piece(piece)
+                        elif board.tiles[clicked_row][clicked_col].piece_present:
+                            piece = board.tiles[clicked_row][clicked_col].piece
+                            # check to see if the piece is the same color as the turn
+                            if piece is not None and piece.color == game.player_color:
+                                board.valid_moves(piece, clicked_row, clicked_col)
+                                drag.initial_pos(event.pos)
+                                drag.drag_piece(piece)
+                                # stack the board, highlights and pieces
+                                game.show_board(screen)
+                                game.highlight_moves(screen)
+                                game.show_pieces(screen)
+
+                    # allow for dragging, refresh piece and background
+                    # when mouse is moved
+                    elif event.type == pygame.MOUSEMOTION and not game.endgame:
+                        if drag.dragging:
+                            drag.update_mouse(event.pos)
                             # stack the board, highlights and pieces
                             game.show_board(screen)
                             game.highlight_moves(screen)
-                            game.show_pieces(screen)
+                            game.show_pieces(screen)   
+                            drag.update_blit(screen)
 
-                # allow for dragging, refresh piece and background
-                # when mouse is moved
-                elif event.type == pygame.MOUSEMOTION:
-                    if drag.dragging:
-                        drag.update_mouse(event.pos)
-                        # stack the board, highlights and pieces
-                        game.show_board(screen)
-                        game.highlight_moves(screen)
-                        game.show_pieces(screen)   
-                        drag.update_blit(screen)
+                    # allows for dropping a piece
+                    elif event.type == pygame.MOUSEBUTTONUP and not game.endgame:
+                        if drag.dragging:
+                            drag.update_mouse(event.pos)
+                            chosen_row = drag.mouse_y // TILE
+                            chosen_col = drag.mouse_x // TILE
 
-                # allows for dropping a piece
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    if drag.dragging:
-                        drag.update_mouse(event.pos)
-                        chosen_row = drag.mouse_y // TILE
-                        chosen_col = drag.mouse_x // TILE
+                            # check to see if the move is valid
+                            initial_pos = Tile(drag.init_row, drag.init_col)
+                            final_pos = Tile(chosen_row, chosen_col)
+                            move = Move(initial_pos, final_pos)
 
-                        # check to see if the move is valid
-                        initial_pos = Tile(drag.init_row, drag.init_col)
-                        final_pos = Tile(chosen_row, chosen_col)
-                        move = Move(initial_pos, final_pos)
+                            if board.check_valid(drag.piece, move):
+                                board.move_piece(drag.piece, move)
+                                # stack the board and pieces
+                                
+                                board.legal_passant(drag.piece)
 
-                        if board.check_valid(drag.piece, move):
-                            board.move_piece(drag.piece, move)
-                            # stack the board and pieces
-                            
-                            board.legal_passant(drag.piece)
+                                game.show_board(screen)
+                                game.show_pieces(screen)
 
-                            game.show_board(screen)
-                            game.show_pieces(screen)
+                                game.change_turn()
 
-                            print(f"In check? {board.is_king_check(game.player_color)}")
-                            print(f"White checkmate? {board.is_checkmate('white')}")
-                            print(f"Black checkmate? {board.is_checkmate('black')}")
-                            
-                            # change the turn
-                            game.change_turn()
-                            board.all_valid_moves(game.player_color)
-                            game.counter(self.game.count)
+                                game.counter(self.game.count)
+                                game.get_state()
 
-                            game.get_state()
+                                game.is_gameover()
+                                if game.gameover != None:
+                                    game.show_endgame(screen)
+                                    game.endgame = True
 
-                            print(game.board.state)
+                                # game.state_tensor()
+                                # print(game.board.state)
+                                # board.all_valid_moves('white')
+                                # print(game.board.white_moves)
+                                # model = ChessAI()
+                                # output = model(game.board.tensor, len(game.board.white_moves))
+                                # print(output.shape)
 
-                            # game.state_tensor()
-                            # print(game.board.state)
-                            # board.all_valid_moves('white')
-                            # print(game.board.white_moves)
-                            # model = ChessAI()
-                            # output = model(game.board.tensor, len(game.board.white_moves))
-                            # print(output.shape)
-                            
-                            # kept from khalil
-                            
+                        drag.drop_piece()        
 
-                    drag.drop_piece()        
-
-                # if 'r' is pressed, reset the game
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        game.reset_game()
-                        game = self.game
-                        board = self.game.board
-                        drag = self.game.drag
+                    # if 'r' is pressed, reset the game
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_r:
+                            game.reset_game()
+                            game = self.game
+                            board = self.game.board
+                            drag = self.game.drag
+                    
+                    elif event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
                 
-                elif event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-            
-            # update the display after every event
-            pygame.display.update()
+                # update the display after every event
+                pygame.display.update()
 
     def train(self):
         screen = self.screen
@@ -298,11 +296,29 @@ class Game:
         self.ChessAI = ChessAI()
         self.player_color = 'white'
         self.count = 0
-        self.gameover = False
+        self.gameover = None
         self.halfmoves = 0
         self.fullmoves = 1
         self.centipawn = 0
+        self.endgame = False
+        self.type_of_game = ''
 
+    def is_gameover(self):
+        if self.board.is_checkmate('black'):
+            self.gameover = 'White wins'
+        else:
+            self.board.all_valid_moves('black')
+            if self.board.black_moves == []:
+                self.gameover = 'Draw'
+        if self.board.is_checkmate('white'):
+            self.gameover = 'Black wins'
+        else:
+            self.board.all_valid_moves('white')
+            if self.board.white_moves == []:
+                self.gameover = 'Draw'
+        if self.halfmoves == 50:
+            self.gameover = 'Draw'
+    
 
     def get_centipawn(self, FEN):
         # Change this if stockfish is somewhere else
@@ -343,6 +359,25 @@ class Game:
                 rect = (col * TILE, row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+    def show_endgame(self, surface):
+        color = (173, 216, 230) # light blue
+        rect = (2 * TILE, 2 * TILE, 4 * TILE, 4 * TILE)
+        pygame.draw.rect(surface, color, rect, 0, 64)
+        pygame.draw.rect(surface, 'black', rect, 5, 64)
+        font1 = pygame.font.Font('freesansbold.ttf', 32)
+        text = font1.render('Gameover:', True, 'black', color)
+        textRect = text.get_rect()
+        textRect.center = (4 * TILE, 3 * TILE + TILE/2)
+        surface.blit(text, textRect)
+        text = font1.render(self.gameover, True, 'black', color)
+        textRect = text.get_rect()
+        textRect.center = (4 * TILE, 4 * TILE)
+        surface.blit(text, textRect)
+        font2 = pygame.font.Font('freesansbold.ttf', 20)
+        text = font2.render("Press 'r' to restart", True, 'black', color)
+        textRect = text.get_rect()
+        textRect.center = (4 * TILE, 4 * TILE + TILE/2)
+        surface.blit(text, textRect)
 
     def show_pieces(self, surface):
         '''
@@ -1109,17 +1144,18 @@ class Board:
         return move in piece.moves
     
     def is_king_check(self, color):
-        self.all_valid_moves(color)
         if color == 'white':
-            for move in self.white_moves:
+            self.all_valid_moves('black')
+            for move in self.black_moves:
                 row = move.final_tile.row
                 col = move.final_tile.col
 
                 if self.tiles[row][col].piece_present() and self.tiles[row][col].piece.name == 'king':
                     return True
             return False
-        elif color == 'black':
-            for move in self.black_moves:
+        if color == 'black':
+            self.all_valid_moves('white')
+            for move in self.white_moves:
                 row = move.final_tile.row
                 col = move.final_tile.col
 
@@ -1128,14 +1164,14 @@ class Board:
             return False
         
     def is_checkmate(self, color):
-        if color == 'white':
+        if color == 'black':
             self.all_valid_moves('black')
             if self.black_moves == [] and self.is_king_check('black'):
                 return True
             return False
-        elif color == 'black':
+        if color == 'white':
             self.all_valid_moves('white')
-            if self.black_moves == [] and self.is_king_check('white'):
+            if self.white_moves == [] and self.is_king_check('white'):
                 return True
             return False
         
@@ -1763,8 +1799,10 @@ class ChessAI(nn.Module):
         pass
 
 if __name__ == '__main__':
+    
+    type_of_game = input("What type of game? ")
     Chess_App = Chess_App()
-    Chess_App.run()
+    Chess_App.run(type_of_game)
     # Chess_App.train()
 
     # import chess
