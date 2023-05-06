@@ -164,12 +164,11 @@ class Chess_App:
                             
                             # change the turn
                             game.change_turn()
-                            print(game.player_color)
                             board.all_valid_moves(game.player_color)
-                            print(board.passant_tile)
                             game.counter(self.game.count)
 
                             game.get_state()
+
                             print(game.board.state)
 
                             # game.state_tensor()
@@ -302,7 +301,24 @@ class Game:
         self.gameover = False
         self.halfmoves = 0
         self.fullmoves = 1
+        self.centipawn = 0
 
+
+    def get_centipawn(self, FEN):
+        # Change this if stockfish is somewhere else
+        engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
+
+        # The position represented in FEN
+        # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+        board = chess.Board(FEN)
+        
+        # Limit our search so it doesn't run forever
+        info = engine.analyse(board, chess.engine.Limit(depth=20))
+
+        # Get the centipawn score from the evaluation
+        self.centipawn = info["score"].relative.score(mate_score=100000) / 100 
+
+        engine.close()
 
     def show_board(self, surface):
         '''
@@ -392,13 +408,13 @@ class Game:
         # increment the count by 0.5 for black moves
         if self.player_color == 'white':
             if self.board.pawn_moved == False and self.board.piece_captured == False:
-                self.halfmoves += 0.5
+                self.halfmoves += 1
             else:
                 self.halfmoves = 0
             self.fullmoves += 1
         else:
             if self.board.pawn_moved == False and self.board.piece_captured == False:
-                self.halfmoves += 0.5
+                self.halfmoves += 1
             else:
                 self.halfmoves = 0
     
@@ -1747,9 +1763,9 @@ class ChessAI(nn.Module):
         pass
 
 if __name__ == '__main__':
-    chess = Chess_App()
-    chess.run()
-    # chess.train()
+    Chess_App = Chess_App()
+    Chess_App.run()
+    # Chess_App.train()
 
     # import chess
     # import chess.engine
