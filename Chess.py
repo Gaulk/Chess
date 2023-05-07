@@ -27,7 +27,6 @@ import pygame
 import sys
 import copy
 import random
-import time
 
 import torch
 import torch.nn as nn
@@ -88,6 +87,9 @@ class Chess_App:
         drag = self.game.drag
         board = self.game.board
         self.game.type_of_game = type_of_game
+        model = ChessAI()
+        model.load_model()
+        agent = ChessAgent(model)
 
         if self.game.type_of_game == 'PVP':
             while True:
@@ -165,20 +167,12 @@ class Chess_App:
                                 game.change_turn()
 
                                 game.counter(self.game.count)
-                                game.get_state()
+                                # game.get_state()
 
                                 game.is_gameover()
                                 if game.gameover != None:
                                     game.show_endgame(screen)
                                     game.endgame = True
-
-                                # game.state_tensor()
-                                # print(game.board.state)
-                                # board.all_valid_moves('white')
-                                # print(game.board.white_moves)
-                                # model = ChessAI()
-                                # output = model(game.board.tensor, len(game.board.white_moves))
-                                # print(output.shape)
 
                         drag.drop_piece()        
 
@@ -197,67 +191,229 @@ class Chess_App:
                 # update the display after every event
                 pygame.display.update()
 
+        if self.game.type_of_game == 'Bot':
+            while True:
+                # show the board and pieces
+                game.show_board(screen)
+                game.highlight_moves(screen)
+                game.show_pieces(screen)
+                if game.endgame:
+                    game.show_endgame(screen)
+
+                if drag.dragging:
+                    drag.update_blit(screen)
+
+                # quit application if user clicks the X
+                for event in pygame.event.get():
+                    if game.player_color == 'white':
+                        # allows for clicks
+                        if event.type == pygame.MOUSEBUTTONDOWN and not game.endgame:
+                            drag.update_mouse(event.pos)
+                            # check to see if the position of the mouse is on a piece
+                            clicked_row = drag.mouse_y // TILE
+                            clicked_col = drag.mouse_x // TILE
+
+                            # if clicking on an empty tile, do nothing
+                            if not board.tiles[clicked_row][clicked_col].piece_present:
+                                # stack the board and pieces
+                                game.show_board(screen)
+                                game.show_pieces(screen)
+                                break
+
+                            elif board.tiles[clicked_row][clicked_col].piece_present:
+                                piece = board.tiles[clicked_row][clicked_col].piece
+                                # check to see if the piece is the same color as the turn
+                                if piece is not None and piece.color == game.player_color:
+                                    board.valid_moves(piece, clicked_row, clicked_col)
+                                    drag.initial_pos(event.pos)
+                                    drag.drag_piece(piece)
+                                    # stack the board, highlights and pieces
+                                    game.show_board(screen)
+                                    game.highlight_moves(screen)
+                                    game.show_pieces(screen)
+
+                        # allow for dragging, refresh piece and background
+                        # when mouse is moved
+                        elif event.type == pygame.MOUSEMOTION and not game.endgame:
+                            if drag.dragging:
+                                drag.update_mouse(event.pos)
+                                # stack the board, highlights and pieces
+                                game.show_board(screen)
+                                game.highlight_moves(screen)
+                                game.show_pieces(screen)   
+                                drag.update_blit(screen)
+
+                        # allows for dropping a piece
+                        elif event.type == pygame.MOUSEBUTTONUP and not game.endgame:
+                            if drag.dragging:
+                                drag.update_mouse(event.pos)
+                                chosen_row = drag.mouse_y // TILE
+                                chosen_col = drag.mouse_x // TILE
+
+                                # check to see if the move is valid
+                                initial_pos = Tile(drag.init_row, drag.init_col)
+                                final_pos = Tile(chosen_row, chosen_col)
+                                move = Move(initial_pos, final_pos)
+
+                                if board.check_valid(drag.piece, move):
+                                    board.move_piece(drag.piece, move)
+                                    # stack the board and pieces
+                                    
+                                    board.legal_passant(drag.piece)
+
+                                    game.show_board(screen)
+                                    game.show_pieces(screen)
+
+                                    game.change_turn()
+                                    game.counter(self.game.count)
+
+                                    game.is_gameover()
+                                    if game.gameover != None:
+                                        game.show_endgame(screen)
+                                        game.endgame = True
+
+                            drag.drop_piece()
+
+                            # if 'r' is pressed, reset the game
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_r:
+                                game.reset_game()
+                                game = self.game
+                                board = self.game.board
+                                drag = self.game.drag
+                        
+                        elif event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+
+                    # # update the display after every event
+                    # pygame.display.update()
+
+                    if game.player_color == 'black' and not game.endgame:
+                        board.all_valid_moves(game.player_color)
+                        game.state_tensor()
+                        current_state_tensor = game.board.tensor
+                        current_len_moves = game.board.black_moves_len
+                        action, state_value = agent.select_action(current_state_tensor, current_len_moves)
+                        move = game.board.black_moves_bot[action]
+                        piece = board.tiles[move.init_tile.row][move.init_tile.col].piece
+
+                        # Move piece
+                        board.move_piece(piece, move)
+
+                        # Change whose turn it is
+                        game.change_turn()
+                        # Increase counter
+                        game.counter(self.game.count)
+
+                        # Show the board
+                        game.show_board(screen)
+                        game.show_pieces(screen)
+
+                        # Calcualte if gameover
+                        game.is_gameover()
+                        if game.gameover != None:
+                            game.show_endgame(screen)
+                            game.endgame = True
+                
+                # update the display after every event
+                pygame.display.update()
+
     def train(self):
         screen = self.screen
         game = self.game
         board = self.game.board
+        model = ChessAI()
+        model.load_model()
+        agent = ChessAgent(model)
+        number_of_games = 1
 
         while True:
             # show the board and pieces
             game.show_board(screen)
             game.highlight_moves(screen)
             game.show_pieces(screen)
+            if game.endgame:
+                    game.show_endgame(screen)
+                    game.reset_game()
+                    game = self.game
+                    board = self.game.board
+                    print(number_of_games)
+                    number_of_games += 1
 
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    # if 'r' is pressed, reset the game
-                    if event.key == pygame.K_r:
-                        game.reset_game()
-                        game = self.game
-                        board = self.game.board
+            # for event in pygame.event.get():
+            #     if event.type == pygame.KEYDOWN:
+            #         # if 'r' is pressed, reset the game
+            #         if event.key == pygame.K_r:
+            #             game.reset_game()
+            #             game = self.game
+            #             board = self.game.board
+            #     elif event.type == pygame.QUIT:
+            #         pygame.quit()
+            #         sys.exit()
 
-                    # if 'n' is pressed, make a move for white and black
-                    elif event.key == pygame.K_n:
-                        while True:
-                            board.all_valid_moves('white')
-                            # print(board.white_moves)
-                            move_white = random.choice(game.board.white_moves)
-                            piece_white = board.tiles[move_white.init_tile.row][move_white.init_tile.col].piece
-                            print(move_white.init_tile.row, move_white.init_tile.col)
-                            print(move_white.final_tile.row, move_white.final_tile.col)
-                            print(piece_white)
-                            game.state_tensor()
-                            # print(board.tensor)
-                            board.move_piece(piece_white, move_white)
-                            move_white.init_tile.clear_piece()
-                            game.change_turn()
-                            print("white move")
+            while game.endgame == False:
+                model.load_model()
+                board.all_valid_moves(game.player_color)
+                # Select move
+                if game.player_color == 'white':
+                    # print("white move")
+                    game.state_tensor()
+                    current_state_tensor = game.board.tensor
+                    current_len_moves = game.board.white_moves_len
+                    action, state_value = agent.select_action(current_state_tensor, current_len_moves)
+                    move = game.board.white_moves_bot[action]
+                if game.player_color == 'black':
+                    # print("black move")
+                    game.state_tensor()
+                    current_state_tensor = game.board.tensor
+                    current_len_moves = game.board.black_moves_len
+                    action, state_value = agent.select_action(current_state_tensor, current_len_moves)
+                    move = game.board.black_moves_bot[action]
+                piece = board.tiles[move.init_tile.row][move.init_tile.col].piece
 
-                            game.show_board(screen)
-                            game.show_pieces(screen)
-                            pygame.display.update()
+                # Move piece
+                board.move_piece(piece, move)
 
-                            board.all_valid_moves('black')
-                            # print(board.black_moves)
-                            move_black = random.choice(game.board.black_moves)
-                            piece_black = board.tiles[move_black.init_tile.row][move_black.init_tile.col].piece
-                            print(move_black.init_tile.row, move_black.init_tile.col)
-                            print(move_black.final_tile.row, move_black.final_tile.col)
-                            print(piece_black)
-                            game.state_tensor()
-                            # print(board.tensor)
-                            board.move_piece(piece_black, move_black)
-                            move_black.init_tile.clear_piece()
-                            game.change_turn()
-                            print("black move")
+                # Change whose turn it is
+                game.change_turn()
+                # Increase counter
+                game.counter(self.game.count)
 
-                            game.show_board(screen)
-                            game.show_pieces(screen)
-                            pygame.display.update()
+                # Show the board
+                game.show_board(screen)
+                game.show_pieces(screen)
+
+                # Calcualte if gameover
+                game.is_gameover()
+                if game.gameover != None:
+                    game.show_endgame(screen)
+                    game.endgame = True
+
+                # Get FEN
+                game.get_state()
+                state = game.board.state
+                # print(state)
+                # Calculate reward
+                # relative, always positive if good for that color
+                game.get_centipawn(state)
+                # print(game.centipawn)
                 
-                elif event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                reward = (-1*game.centipawn) - (game.previous_centipawn)
+                # print(f"reward: {reward}")
+                game.state_tensor()
+                next_state_tensor = game.board.tensor
+                board.all_valid_moves(game.player_color)
+                if game.player_color == 'white':
+                    next_num_moves = game.board.black_moves_len
+                if game.player_color == 'black':
+                    next_num_moves = game.board.white_moves_len
+                # Update the model
+                agent.update_model(state_value, reward, next_state_tensor, next_num_moves, game.endgame)
+                game.previous_centipawn = game.centipawn
+
+                model.save_model()
+                pygame.display.update()
 
             # update the display after every event
             pygame.display.update()
@@ -299,6 +455,7 @@ class Game:
         self.gameover = None
         self.halfmoves = 0
         self.fullmoves = 1
+        self.previous_centipawn = 0
         self.centipawn = 0
         self.endgame = False
         self.type_of_game = ''
@@ -316,9 +473,8 @@ class Game:
             self.board.all_valid_moves('white')
             if self.board.white_moves == []:
                 self.gameover = 'Draw'
-        if self.halfmoves == 50:
+        if self.halfmoves >= 50:
             self.gameover = 'Draw'
-    
 
     def get_centipawn(self, FEN):
         # Change this if stockfish is somewhere else
@@ -329,10 +485,11 @@ class Game:
         board = chess.Board(FEN)
         
         # Limit our search so it doesn't run forever
-        info = engine.analyse(board, chess.engine.Limit(depth=20))
+        info = engine.analyse(board, chess.engine.Limit(depth=14))
 
         # Get the centipawn score from the evaluation
         self.centipawn = info["score"].relative.score(mate_score=100000) / 100 
+        # self.centipawn = info["score"].relative.score() / 100
 
         engine.close()
 
@@ -892,10 +1049,6 @@ class Tile:
         '''
         if not self.piece_present():
             return True
-        
-    def clear_piece(self):
-        self.piece = None
-
 
     def moveable_square(self, color):
         '''
@@ -976,7 +1129,13 @@ class Board:
         self.state = ""
         self.tensor = torch.zeros((6,8,8), dtype=torch.int)
         self.white_moves = []
+        self.white_moves_extra = []
+        self.white_moves_bot = []
+        self.white_moves_len = 0
         self.black_moves = []
+        self.black_moves_extra = []
+        self.black_moves_bot = []
+        self.black_moves_len = 0
         self.passant_tile = None
         self.K_castle = True
         self.Q_castle = True
@@ -1036,11 +1195,28 @@ class Board:
                 diff = final.col - initial.col
                 if diff < 0:
                     # castle left
-                    rook = piece.l_rook
+                    if piece.color == 'white':
+                        init_tile = Tile(7, 0, piece.l_rook)
+                        final_tile = Tile(7, 3, piece.l_rook)
+                        move = Move(init_tile, final_tile)
+                        self.move_piece(piece.l_rook, move)
+                    if piece.color == 'black':
+                        init_tile = Tile(0, 0, piece.l_rook)
+                        final_tile = Tile(0, 3, piece.l_rook)
+                        move = Move(init_tile, final_tile)
+                        self.move_piece(piece.l_rook, move)
                 else:
                     # castle right
-                    rook = piece.r_rook
-                self.move_piece(rook, rook.moves[-1])
+                    if piece.color == 'white':
+                        init_tile = Tile(7, 7, piece.r_rook)
+                        final_tile = Tile(7, 5, piece.r_rook)
+                        move = Move(init_tile, final_tile)
+                        self.move_piece(piece.r_rook, move)
+                    if piece.color == 'black':
+                        init_tile = Tile(0, 7, piece.r_rook)
+                        final_tile = Tile(0, 5, piece.r_rook)
+                        move = Move(init_tile, final_tile)
+                        self.move_piece(piece.r_rook, move)
             if piece.color == 'white':
                 self.K_castle = False
                 self.Q_castle = False
@@ -1115,8 +1291,18 @@ class Board:
         # create a board copy
         board_copy = copy.deepcopy(self)
         piece_copy = copy.deepcopy(piece)
+        final_row = move.final_tile.row
+        final_col = move.final_tile.col
         # move the piece on the board copy
         board_copy.move_piece(piece_copy, move, testing=True)
+
+        if isinstance(piece, King):
+            for i in range(final_row - 1, final_row + 2):
+                for j in range(final_col - 1, final_col + 2):
+                    if Tile.on_board(i,j) and board_copy.tiles[i][j].enemy_present(piece.color):
+                        if board_copy.tiles[i][j].piece.name == 'king':
+                            return True
+        
         # check to see if the king is in check
         for i in range(ROWS):
             for j in range(COLS):
@@ -1125,10 +1311,10 @@ class Board:
                     atk_piece = board_copy.tiles[i][j].piece
                     board_copy.valid_moves(atk_piece, i, j, k_check=False)
                     # loop the moves of the enemy piece to see if the king is in check
-                    for atk_move in atk_piece.moves:
+                    for atk_move in atk_piece.moves:                  
                         if isinstance(atk_move.final_tile.piece, King):
                             return True # if the king is in check
-                        
+
         return False # if the king is not in check
 
 
@@ -1175,8 +1361,6 @@ class Board:
                 return True
             return False
         
-
-
 
     def valid_moves(self, piece, row, col, k_check=True):
         '''
@@ -1262,7 +1446,7 @@ class Board:
             else:
                 vert_move = 2
 
-            # add moves for forward movement
+            # add moves for forward movementc
             start_row = row + piece.dir
             end_row = row + (piece.dir * (1 + vert_move))
             for poss_row in range(start_row, end_row, piece.dir):
@@ -1294,8 +1478,8 @@ class Board:
                         final_tile = Tile(poss_row, i)
                         # create a final piece to see if king is in check
                         final_piece = self.tiles[poss_row][i].piece
-
-                        move = Move(init_tile, final_tile)
+                        chosen = Tile(poss_row, i, final_piece)
+                        move = Move(init_tile, chosen)
 
                         # check to see if the king is in check
                         if k_check:
@@ -1304,7 +1488,6 @@ class Board:
                         else:
                             piece.add_move(move)
 
-                    
             # code for en passant
             if piece.color == 'white':
                 r_pawn = 3
@@ -1529,6 +1712,8 @@ class Board:
     def all_valid_moves(self, color):
         self.white_moves = []
         self.black_moves = []
+        self.white_moves_bot = []
+        self.black_moves_bot = []
         
         for row, _ in enumerate(self.tiles):
             for col, tile in enumerate(self.tiles[row]):
@@ -1536,20 +1721,26 @@ class Board:
                     piece = tile.piece
                     self.valid_moves(piece, row, col)
                     for move in piece.moves:
-                        # move_coordinates = ((move.init_tile.row, move.init_tile.col), 
-                        #                     (move.final_tile.row, move.final_tile.col))
                         if color == 'white':
                             self.white_moves.append(move)
                         elif color == 'black':
                             self.black_moves.append(move)
                         piece.clear_moves()
+        if color == 'white':
+            self.white_moves_len = len(self.white_moves)
+        elif color == 'black':
+            self.black_moves_len = len(self.black_moves)
 
-        # while len(self.white_moves) != 4096 and len(self.black_moves) != 4096:
-        #     if len(self.white_moves) != 0:
-        #         self.white_moves.append(((0,0),(0,0)))
-        #     elif len(self.black_moves) != 0:
-        #         self.black_moves.append(((0,0),(0,0)))
-        
+        self.white_moves_bot = self.white_moves.copy()
+        self.black_moves_bot = self.black_moves.copy()
+
+        if len(self.white_moves_bot) != 0 or len(self.black_moves_bot) != 0:
+            while len(self.white_moves_bot) != 218 and len(self.black_moves_bot) != 218:
+                if len(self.white_moves_bot) != 0:
+                    self.white_moves_bot.append(((0,0),(0,0)))
+                elif len(self.black_moves_bot) != 0:
+                    self.black_moves_bot.append(((0,0),(0,0)))
+
 
     def create_board(self):
         '''
@@ -1753,7 +1944,7 @@ class Move:
         return self.init_tile == other.init_tile and self.final_tile == other.final_tile
 
 class ChessAI(nn.Module):
-    def __init__(self, model_file=None, num_actions=4096):
+    def __init__(self, model_file=None, num_actions=218):
         super(ChessAI, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=6, out_channels=32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
@@ -1773,57 +1964,61 @@ class ChessAI(nn.Module):
         state_tensor = self.fc2(state_tensor)
 
         # Resize output tensor to match the number of possible moves
-        state_tensor = state_tensor.view(-1, num_moves)
+        state_tensor = state_tensor[:, :num_moves]
 
         return F.softmax(state_tensor, dim=1)
     
-    def train_model():
-        # reset
-            # Khalil made a reset function
+    def save_model(self):
+        return torch.save(self.state_dict(), 'ChessAI.pt')
+
+    def load_model(self):
+        return self.load_state_dict(torch.load('ChessAI.pt'))
+    
+class ChessAgent():
+    def __init__(self, model, learning_rate=0.001, gamma=0.99):
+        self.model = model
+        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.gamma = gamma
+
+    # def select_action(self, state_tensor, num_moves):
+    #     probs = self.model.forward(state_tensor, num_moves)
+    #     action = torch.multinomial(probs, 1).item()
+    #     state_value = probs[0, action]
+    #     return action, state_value
+    
+    # def select_action(self, state_tensor, num_moves, temperature=15.0):
+    #     probs = self.model.forward(state_tensor, num_moves)
+    #     scaled_probs = torch.exp(torch.log(probs) / temperature)
+    #     scaled_probs /= torch.sum(scaled_probs)
+
+    #     action = torch.multinomial(scaled_probs, 1).item()
+    #     state_value = probs[0, action]
+    #     return action, state_value
+    
+    def select_action(self, state_tensor, num_moves, noise_scale=0.0):
+        logits = self.model.forward(state_tensor, num_moves)
+        noise = noise_scale * torch.randn_like(logits)
+        probs = F.softmax(logits + noise, dim=-1)
+        action = torch.multinomial(probs, 1).item()
+        state_value = probs[0, action]
+        return action, state_value
+
+    def update_model(self, state_value, reward, next_state_tensor, next_num_moves, gameover):
+        self.optimizer.zero_grad()
+
+        next_state_value = torch.zeros(1, 1)
+        if not gameover:
+            next_state_value = self.model.forward(next_state_tensor, next_num_moves).max(1)[0].detach().unsqueeze(1)
+        expected_state_value = reward + self.gamma * next_state_value
+        loss = (state_value - expected_state_value).pow(2).mean()
         
-        # reward
-            # use algorithm to calculate score of position
-
-        # game over function
-            # checkmate or stalemate
-        
-        # play(action)
-        pass
-
-    def save_model():
-        # save the trained model
-        pass
-
-    def make_move():
-        # use saved model and mave a move for the game
-        pass
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
 if __name__ == '__main__':
-    
-    type_of_game = input("What type of game? ")
+
+    type_of_game = input("What type of game? PVP or Bot: ")
     Chess_App = Chess_App()
     Chess_App.run(type_of_game)
     # Chess_App.train()
-
-    # import chess
-    # import chess.engine
-
-    # # Change this if stockfish is somewhere else
-    # engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
-
-    # # The position represented in FEN
-    # # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
-    # board = chess.Board("r1b1k1nr/pppp1ppp/2n5/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1")
-    
-
-    # # Limit our search so it doesn't run forever
-    # info = engine.analyse(board, chess.engine.Limit(depth=20))
-
-    # # Get the centipawn score from the evaluation
-    # score = info["score"].relative.score(mate_score=100000) / 100
-
-    # print("getting info")
-    # print(f"Centipawn score: {score}")
-    # print("info got")  
-
-    # engine.close()
