@@ -274,7 +274,7 @@ class Chess_App:
 
                             drag.drop_piece()
 
-                            # if 'r' is pressed, reset the game
+                        # if 'r' is pressed, reset the game
                         elif event.type == pygame.KEYDOWN:
                             if event.key == pygame.K_r:
                                 game.reset_game()
@@ -521,10 +521,7 @@ class Game:
 
                 if col == 0:
                     # make light grey font for dark brown tiles, dark grey font for light brown tiles
-                    if row % 2 == 0:
-                        color = (128, 128, 128) # dark grey
-                    else:
-                        color = (192, 192, 192) # light grey
+                    color = (0, 0, 0)
                     # create label
                     row_lbl = row_lbl_font.render(str(ROWS - row), True, color)
                     row_lbl_pos = (5, 5 + row * TILE)
@@ -535,10 +532,7 @@ class Game:
                 col_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
                 # make light grey font for dark brown tiles, dark grey font for light brown tiles
                 if row == 7:
-                    if col % 2 == 0:
-                        color = (192, 192, 192)
-                    else:
-                        color = (128, 128, 128)
+                    color = (0, 0, 0)
                     # create label
                     col_lbl = col_lbl_font.render(Tile.get_col_lett(col), True, color)
                     col_lbl_pos = (col * TILE + TILE - 20, HEIGHT - 20)
@@ -1029,14 +1023,14 @@ class Tile:
         # piece_present: *bool*, checks to see if a piece is present on the tile
     '''
     # dictionary of column letters
-    COL_LETT = {0: 'A', 
-                1: 'B', 
-                2: 'C', 
-                3: 'D', 
-                4: 'E',
-                5: 'F',
-                6: 'G',
-                7: 'H'
+    COL_LETT = {0: 'a', 
+                1: 'b', 
+                2: 'c', 
+                3: 'd', 
+                4: 'e',
+                5: 'f',
+                6: 'g',
+                7: 'h'
                 }
     
     @staticmethod
