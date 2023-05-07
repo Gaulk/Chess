@@ -490,7 +490,7 @@ class Game:
 
     def get_centipawn(self, FEN):
         # Change this if stockfish is somewhere else
-        engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
+        engine = chess.engine.SimpleEngine.popen_uci("stockfish_15.1_win_x64_popcnt/stockfish-windows-2022-x86-64-modern.exe")
 
         # The position represented in FEN
         # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
@@ -2081,7 +2081,7 @@ class ChessAgent():
 
 if __name__ == '__main__':
 
-    type_of_game = input("What type of game? PVP or Bot: ")
+    # type_of_game = input("What type of game? PVP or Bot: ")
     Chess_App = Chess_App()
-    Chess_App.run(type_of_game)
-    # Chess_App.train()
+    # Chess_App.run(type_of_game)
+    Chess_App.train()
