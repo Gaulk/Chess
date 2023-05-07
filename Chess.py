@@ -205,6 +205,18 @@ class Chess_App:
 
                 # quit application if user clicks the X
                 for event in pygame.event.get():
+                    # if 'r' is pressed, reset the game
+                    if event.type == pygame.KEYDOWN and game.endgame:
+                        if event.key == pygame.K_r:
+                            game.reset_game()
+                            game = self.game
+                            board = self.game.board
+                            drag = self.game.drag
+                    
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+
                     if game.player_color == 'white':
                         # allows for clicks
                         if event.type == pygame.MOUSEBUTTONDOWN and not game.endgame:
@@ -516,28 +528,29 @@ class Game:
                 rect = (col * TILE, row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
                 
-                # draw row label
-                row_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
+                ## Creating a label
+                # # draw row label
+                # row_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
 
-                if col == 0:
-                    # make light grey font for dark brown tiles, dark grey font for light brown tiles
-                    color = (0, 0, 0)
-                    # create label
-                    row_lbl = row_lbl_font.render(str(ROWS - row), True, color)
-                    row_lbl_pos = (5, 5 + row * TILE)
-                    # draw lab
-                    surface.blit(row_lbl, row_lbl_pos)
+                # if col == 0:
+                #     # make light grey font for dark brown tiles, dark grey font for light brown tiles
+                #     color = (0, 0, 0)
+                #     # create label
+                #     row_lbl = row_lbl_font.render(str(ROWS - row), True, color)
+                #     row_lbl_pos = (5, 5 + row * TILE)
+                #     # draw lab
+                #     surface.blit(row_lbl, row_lbl_pos)
 
-                # draw column label
-                col_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
-                # make light grey font for dark brown tiles, dark grey font for light brown tiles
-                if row == 7:
-                    color = (0, 0, 0)
-                    # create label
-                    col_lbl = col_lbl_font.render(Tile.get_col_lett(col), True, color)
-                    col_lbl_pos = (col * TILE + TILE - 20, HEIGHT - 20)
-                    # draw label
-                    surface.blit(col_lbl, col_lbl_pos)
+                # # draw column label
+                # col_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
+                # # make light grey font for dark brown tiles, dark grey font for light brown tiles
+                # if row == 7:
+                #     color = (0, 0, 0)
+                #     # create label
+                #     col_lbl = col_lbl_font.render(Tile.get_col_lett(col), True, color)
+                #     col_lbl_pos = (col * TILE + TILE - 20, HEIGHT - 20)
+                #     # draw label
+                #     surface.blit(col_lbl, col_lbl_pos)
 
 
     def show_endgame(self, surface):
