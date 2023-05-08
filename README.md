@@ -6,6 +6,7 @@ Chess is a game that has 64 squares, where each color has 16 pieces, white and b
 
 ## 2. Requirements
 Please see the requirements.txt file to ensure your environment is set up correctly.
+
 Note: the AI has been trained in stockfish using a .exe file that can only be run on a PC.
 Running the main file (as described below), will run in game mode automatically. Instructions below describe changing to training mode.
 
