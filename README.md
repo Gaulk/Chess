@@ -1,13 +1,15 @@
 # Chess
 A game where you can play chess against another human or bot, or train the bot against itself.
 
-### Basic Requirements
-Requires the installation of python 3.10.9, pygame 2.4.0, pytorch 2.0.0, chess 1.9.4.
-
 ## 1. Introduction to Chess
 Chess is a game that has 64 squares, where each color has 16 pieces, white and black. White always moves first. There are three possilbe conclusions white wins, black wins, or draw. In this game there are two modes for playing. The first is two humans and the second is one human and one bot. Another feature of this game is the ability to train the bot. During this state two bots play against each other indefinetely to train the model.
 
-## 2. Starting the game
+## 2. Requirements
+Please see the requirements.txt file to ensure your environment is set up correctly.
+Note: the AI has been trained in stockfish using a .exe file that can only be run on a PC.
+Running the main file (as described below), will run in game mode automatically. Instructions below describe changing to training mode.
+
+## 3. Starting the game
 To run the game you have to run the Chess.py file. Inside this file all lines beside the .train() must be uncommented.
 ![image](https://user-images.githubusercontent.com/121264060/236707930-95f72866-8521-46d0-90c8-a72682f06eec.png)
 
