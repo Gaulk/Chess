@@ -38,6 +38,7 @@ import torch.nn.functional as F
 
 import chess
 import chess.engine
+import platform
 
 # Screen dimensions
 WIDTH = 800
@@ -2333,7 +2334,15 @@ class ChessAgent():
 
 
 if __name__ == '__main__':
-    type_of_game = input("What type of game? PVP or Bot: ")
-    Chess_App = Chess_App()
-    Chess_App.run(type_of_game)
-    # Chess_App.train()
+    train_or_play = input("Train or Play: ")
+    if train_or_play == "Play":
+        type_of_game = input("What type of game? PVP or Bot: ")
+        Chess_App = Chess_App()
+        Chess_App.run(type_of_game)
+    else:
+        # assert that the OS is Windows
+        if (platform.system() != 'Windows'):
+            print("ATTENTION: This model was trained on Windows, so it can only be trained in a Windows Environment")
+        else:
+            Chess_App = Chess_App()
+            Chess_App.train()
