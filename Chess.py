@@ -22,6 +22,9 @@ The following classes are included:
     # Move - represents a move
 '''
 
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 # import libraries
 import pygame
 import sys
@@ -2330,8 +2333,7 @@ class ChessAgent():
 
 
 if __name__ == '__main__':
-
-    # type_of_game = input("What type of game? PVP or Bot: ")
+    type_of_game = input("What type of game? PVP or Bot: ")
     Chess_App = Chess_App()
-    # Chess_App.run(type_of_game)
-    Chess_App.train()
+    Chess_App.run(type_of_game)
+    # Chess_App.train()
