@@ -1,28 +1,28 @@
 '''
-This code contains the main architecture of the chess game.
-It contains the classes for the board, tiles, pieces, moves, and drag.
-It also contains the main game loop.
+NOTE: Please see the README file for instructions on how to run the program
+
+This code contains the main game loop
+
+It also contains several classes that are used to create the game and display the game in a pygame GUI
+The following classes are included:
+    # Game - represents the game
+    # Board - represents the board
+    # Tile - represents a tile on the board
+    # Piece - represents a piece that can be placed on a tile, super class of all pieces types:
+        # King - represents a king
+        # Pawn - represents a pawn
+        # Rook - represents a rook
+        # Knight - represents a knight
+        # Bishop - represents a bishop
+        # Queen - represents a queen
+    # Drag - represents the dragging of a piece
+    # Chess_App - represents the main game loop
+    # ChessAI - represents the AI
+    # ChessAgent - represents the agent
+    # Move - represents a move
 '''
 
-### Updates
-## State for RL and input to stockfish
-# who's turn it is (w/b) - khalil
-# can castle? binary both white and black - khalil
-# count number of half moves since pawn push/ capture?
-# count of total moves 0.5 per move
-# which piece can en passant - done
-
-## All possible moves per color/turn, used as actions for RL
-# Functtionality to make a move for RL
-# Functionality to determine reward via stockfish
-# class for bot (train and make move)
-
-## Checkmate - Khalil
-# select side feature
-    # choose if white or black, choose if playing bot, 2 bots? pvp?
-        # do this to train, don't need googoogaga human
-# stress test
-
+# import libraries
 import pygame
 import sys
 import copy
@@ -55,6 +55,7 @@ class Chess_App:
     **Methods**
         # __init__ - initializes the game
         # run - runs the main game loop
+        # train - trains the AI
     '''
 
     def __init__(self):
@@ -76,8 +77,9 @@ class Chess_App:
         '''
         This method runs the main game loop, displaying the board and pieces
         and allowing for user input.
+        Also allows for the user to select the type of game to be played (PVP or Bot)
         **Parameters**
-            # none
+            # type_of_game - the type of game to be played (PVP or Bot)
         **Returns**
             # none
         '''
@@ -203,7 +205,7 @@ class Chess_App:
                 if drag.dragging:
                     drag.update_blit(screen)
 
-                # quit application if user clicks the X
+                # sets events within the game
                 for event in pygame.event.get():
                     if game.player_color == 'white':
                         # allows for clicks
@@ -282,6 +284,7 @@ class Chess_App:
                                 board = self.game.board
                                 drag = self.game.drag
                         
+                        # quit application if user clicks the X
                         elif event.type == pygame.QUIT:
                             pygame.quit()
                             sys.exit()
@@ -320,6 +323,13 @@ class Chess_App:
                 pygame.display.update()
 
     def train(self):
+        '''
+        This function allows the user to train the model while displaying the board
+        **Parameters**
+            None
+        **Returns**
+            None
+        '''
         screen = self.screen
         game = self.game
         board = self.game.board
@@ -333,38 +343,27 @@ class Chess_App:
             game.show_board(screen)
             game.highlight_moves(screen)
             game.show_pieces(screen)
+
+            # shows the endgame screen
             if game.endgame:
                     game.show_endgame(screen)
                     game.reset_game()
                     game = self.game
                     board = self.game.board
-                    print(number_of_games)
                     number_of_games += 1
 
-            # for event in pygame.event.get():
-            #     if event.type == pygame.KEYDOWN:
-            #         # if 'r' is pressed, reset the game
-            #         if event.key == pygame.K_r:
-            #             game.reset_game()
-            #             game = self.game
-            #             board = self.game.board
-            #     elif event.type == pygame.QUIT:
-            #         pygame.quit()
-            #         sys.exit()
-
             while game.endgame == False:
+                # run the game while not gameover
                 model.load_model()
                 board.all_valid_moves(game.player_color)
                 # Select move
                 if game.player_color == 'white':
-                    # print("white move")
                     game.state_tensor()
                     current_state_tensor = game.board.tensor
                     current_len_moves = game.board.white_moves_len
                     action, state_value = agent.select_action(current_state_tensor, current_len_moves)
                     move = game.board.white_moves_bot[action]
                 if game.player_color == 'black':
-                    # print("black move")
                     game.state_tensor()
                     current_state_tensor = game.board.tensor
                     current_len_moves = game.board.black_moves_len
@@ -399,7 +398,7 @@ class Chess_App:
                 game.get_centipawn(state)
                 # print(game.centipawn)
                 
-                reward = (-1*game.centipawn) - (game.previous_centipawn)
+                reward = (-1 * game.centipawn) - (game.previous_centipawn)
                 # print(f"reward: {reward}")
                 game.state_tensor()
                 next_state_tensor = game.board.tensor
@@ -412,6 +411,7 @@ class Chess_App:
                 agent.update_model(state_value, reward, next_state_tensor, next_num_moves, game.endgame)
                 game.previous_centipawn = game.centipawn
 
+                # save the model
                 model.save_model()
                 pygame.display.update()
 
@@ -427,7 +427,14 @@ class Game:
         # drag - the drag object
         # player_color - the color of the player
         # count - the number of moves
+        # gameover - the gameover screen
+        # halfmoves - the number of halfmoves
+        # fullmoves - the number of fullmoves
+        # previous_centipawn - the previous centipawn
+        # centipawn - the current centipawn score
+        # endgame - the endgame screen
     **Methods**
+        # __init__ - constructor for the game
         # show_board - shows the board
         # show_pieces - shows the pieces
         # highlight_moves - highlights the valid moves
@@ -435,6 +442,10 @@ class Game:
         # reset_game - resets the game
         # get_state - gets the state of the board
         # counter - counts the number of moves
+        # get_centipawn - gets the centipawn score
+        # state_tensor - gets the state tensor
+        # is_gameover - checks if the game is over
+        # show_endgame - shows the endgame screen
     '''
 
     def __init__(self):
@@ -446,7 +457,6 @@ class Game:
             # none
         '''
 
-        # initialize the board using the board class
         self.board = Board()
         self.drag = Drag()
         self.ChessAI = ChessAI()
@@ -460,7 +470,16 @@ class Game:
         self.endgame = False
         self.type_of_game = ''
 
+
     def is_gameover(self):
+        '''
+        This method checks if the game is over
+        Function will check if the game is over by checkmate, stalemate, or 50 move rule
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
         if self.board.is_checkmate('black'):
             self.gameover = 'White wins'
         else:
@@ -476,7 +495,16 @@ class Game:
         if self.halfmoves >= 50:
             self.gameover = 'Draw'
 
+
     def get_centipawn(self, FEN):
+        '''
+        This method gets the centipawn score from the stockfish engine
+        This assists in rewarding the model
+        **Parameters**
+            # FEN - the FEN of the board
+        **Returns**
+            # none
+        '''
         # Change this if stockfish is somewhere else
         engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
 
@@ -493,6 +521,7 @@ class Game:
 
         engine.close()
 
+
     def show_board(self, surface):
         '''
         This method shows the board and the row and column labels
@@ -502,6 +531,7 @@ class Game:
             # none
         '''
 
+        # draw the board
         for row in range(ROWS):
             for col in range(COLS):
                 # set color of tile
@@ -512,13 +542,14 @@ class Game:
                 else:
                     color = (199, 141, 83) # dark brown
              
-                    # draw square
+                # draw square for each tile on the board
                 rect = (col * TILE, row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
                 
                 # draw row label
                 row_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
 
+                # draw labels on left side of board for the rows and columns
                 if col == 0:
                     # make light grey font for dark brown tiles, dark grey font for light brown tiles
                     if row % 2 == 0:
@@ -547,24 +578,40 @@ class Game:
 
 
     def show_endgame(self, surface):
+        '''
+        This function shows the endgame screen once the game is over
+        **Parameters**
+            # surface: *pygame.Surface* - the surface to draw on
+        **Returns**
+            # none
+        '''
+
+        # draw a blue rectangle in the center of the screen
         color = (173, 216, 230) # light blue
         rect = (2 * TILE, 2 * TILE, 4 * TILE, 4 * TILE)
         pygame.draw.rect(surface, color, rect, 0, 64)
         pygame.draw.rect(surface, 'black', rect, 5, 64)
+        
+        # pass the gameover message to the screen
         font1 = pygame.font.Font('freesansbold.ttf', 32)
         text = font1.render('Gameover:', True, 'black', color)
         textRect = text.get_rect()
         textRect.center = (4 * TILE, 3 * TILE + TILE/2)
+        
+        # pass the winner to the screen
         surface.blit(text, textRect)
         text = font1.render(self.gameover, True, 'black', color)
         textRect = text.get_rect()
         textRect.center = (4 * TILE, 4 * TILE)
         surface.blit(text, textRect)
+        
+        # pass the restart message to the screen
         font2 = pygame.font.Font('freesansbold.ttf', 20)
         text = font2.render("Press 'r' to restart", True, 'black', color)
         textRect = text.get_rect()
         textRect.center = (4 * TILE, 4 * TILE + TILE/2)
         surface.blit(text, textRect)
+
 
     def show_pieces(self, surface):
         '''
@@ -614,11 +661,17 @@ class Game:
                 rect = (move.final_tile.col * TILE, move.final_tile.row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
 
+
     def counter(self, count):
         '''
-        This method counts the number of moves made
-        moves increment by 0.5 for every move made
-        thus after both players have made a move, the count will increment by 1
+        Counts the number of moves and halfmoves made
+        After both players have made a move, the count will increment by 1
+        Halfmoves are counted for moves in which a pawn is not moved or a piece is not captured
+        Thus a pawn is moved or a piece is captured, the halfcount will reset to 0
+        halfmoves is initialized to 0 at the start of the game
+        fullmoves is initialized to 1 at the start of the game (as it only counts up when black moves)
+        Function assists with the FEN notation, 50 move rule and stalemate
+
         **Parameters**
             # count: *float*, 0 at the start of the game
         **Returns**
@@ -639,21 +692,21 @@ class Game:
                 self.halfmoves += 1
             else:
                 self.halfmoves = 0
-    
-        return count
 
 
     def get_state(self):
         '''
-        This method gets the state of the board
+        This method gets the state of the board for FEN notation
         **Parameters**
             # none
         **Returns**
             # none
         '''
 
+        # sets an empty string to the board state
         self.board.state = ''
         
+        # loop through the board and add the FEN notation to the board state
         for row, _ in enumerate(self.board.tiles):
             num_open = 0
             for col, tile in enumerate(self.board.tiles[row]):
@@ -673,6 +726,7 @@ class Game:
 
         self.board.state += ' '
 
+        # add the player turn
         if self.player_color == 'white':
             self.board.state += 'w'
         else:
@@ -697,7 +751,7 @@ class Game:
         if no_castles == 0:
             self.board.state += '-'
         
-
+        # create a dictionary to convert the tile number to a letter
         tile_dict = {
             1: "a",
             2: "b",
@@ -709,6 +763,7 @@ class Game:
             8: "h"
         }
 
+        # check to see if en passant is possible
         if self.board.passant_tile != None:
             passant_square = tile_dict[self.board.passant_tile[1]+1] + str(8-self.board.passant_tile[0])
             self.board.state += " "
@@ -727,7 +782,16 @@ class Game:
         self.board.state += ' '
         self.board.state += str(self.fullmoves)
 
+
     def state_tensor(self):
+        '''
+        This method converts the board state to a tensor
+        **Parameters**
+            # none
+        **Returns**
+            # none
+        '''
+
         self.board.tensor = torch.zeros((6,8,8), dtype=torch.float)
         piece_dict = {
             'pawn': 0,
@@ -738,6 +802,7 @@ class Game:
             'king': 5
         }
 
+        # loop through the board
         for row, _ in enumerate(self.board.tiles):
             for col, tile in enumerate(self.board.tiles[row]):
                 if tile.piece_present():
@@ -747,9 +812,6 @@ class Game:
                             self.board.tensor[piece_dict[tile.piece.name],row,col] = -1
 
 
-
-
-# method of changing tuns
     def change_turn(self):
         '''
         This method changes the turn
@@ -814,7 +876,6 @@ class Piece:
         self.set_img()
         self.img_rect = img_rect
 
-
     def set_img(self):
         '''
         This method sets the image of the piece
@@ -851,7 +912,6 @@ class Piece:
         self.moves = []
 
 
-# create the children of the piece class, one for each piece
 class Pawn(Piece):
     '''
     This class represents a pawn, which is a child of the Piece class
@@ -859,7 +919,7 @@ class Pawn(Piece):
         # dir - the direction the pawn can move
         # en_passant - whether or not the pawn can be taken en passant
         # FEN_notation - the FEN notation for the pawn
-        # inherited from Piece
+        # inherited from Piece (name, color, moves, moved, img, img_rect)
     **Methods**
         # none
     '''
@@ -889,8 +949,8 @@ class Knight(Piece):
     '''
     This class represents a knight, which is a child of the Piece class
     **Attributes**
-        # none, but inherits from Piece
         # FEN_notation: *str*, the FEN notation of the knight
+        # inherited from Piece (name, color, moves, moved, img, img_rect)
     **Methods**
         # none
     '''
@@ -915,8 +975,8 @@ class Bishop(Piece):
     '''
     This class represents a bishop, which is a child of the Piece class
     **Attributes**
-        # none, but inherits from Piece
         # FEN_notation, *str* - the FEN notation of the bishop
+        # inherited from Piece (name, color, moves, moved, img, img_rect)
     **Methods**
         # none
     '''
@@ -941,8 +1001,8 @@ class Rook(Piece):
     '''
     This class represents a rook, which is a child of the Piece class
     **Attributes**
-        # none, but inherits from Piece
         # FEN_notation: *str*, the FEN notation of the rook
+        # inherited from Piece (name, color, moves, moved, img, img_rect)
     **Methods**
         # none
     '''
@@ -967,8 +1027,8 @@ class Queen(Piece):
     '''
     This class represents a queen, which is a child of the Piece class
     **Attributes**
-        # none, but inherits from Piece
         # FEN_notation, *str* the FEN notation of the queen
+        # inherited from Piece (name, color, moves, moved, img, img_rect)
     **Methods**
         # none
     '''
@@ -981,6 +1041,7 @@ class Queen(Piece):
         **Returns**
             # none
         '''
+
         super().__init__('queen', color)
         if color == "white":
             self.FEN_notation = "Q"
@@ -992,8 +1053,10 @@ class King(Piece):
     '''
     This class represents a king, which is a child of the Piece class
     **Attributes**
-        # none, but inherits from Piece
         # FEN_notation: *str*, the FEN notation of the king
+        # l_rook: *Rook obj*, the left rook of the king
+        # r_rook: *Rook obj*, the right rook of the king
+        # inherited from Piece (name, color, moves, moved, img, img_rect)
     **Methods**
         # none
     '''
@@ -1006,6 +1069,7 @@ class King(Piece):
         **Returns**
             # none
         '''
+
         # rooks are added as attributes of the king
         # this will be used for castling
         self.l_rook = None
@@ -1026,8 +1090,15 @@ class Tile:
         # piece: *Piece obj* the piece on the tile
     **Methods**
         # __init__: *constructor*, creates a new tile
+        # __eq__: *bool*, checks to see if two tiles are equal
         # piece_present: *bool*, checks to see if a piece is present on the tile
+        # empty_tile: *bool*, checks to see if the tile is empty
+        # moveable_square: *bool*, checks to see if the tile is a moveable square
+        # enemy_present: *bool*, checks to see if an enemy piece is present on the tile
+        # friendly_present: *bool*, checks to see if a friendly piece is present on the tile
+        # get_col_lett: *str*, returns the column letter of the tile
     '''
+
     # dictionary of column letters
     COL_LETT = {0: 'A', 
                 1: 'B', 
@@ -1038,11 +1109,6 @@ class Tile:
                 6: 'G',
                 7: 'H'
                 }
-    
-    @staticmethod
-    def get_col_lett(col):
-        return Tile.COL_LETT[col]
-
 
     def __init__(self, row, col, piece=None):
         '''
@@ -1054,6 +1120,7 @@ class Tile:
         **Returns**
             # none
         '''
+
         self.row = row
         self.col = col
         self.piece = piece
@@ -1079,10 +1146,12 @@ class Tile:
         **Returns**
             # *bool* - True if a piece is present, False otherwise
         '''
+
         if self.piece != None:
             return True
         else:
             return False
+
 
     def empty_tile(self):
         '''
@@ -1092,8 +1161,10 @@ class Tile:
         **Returns**
             # *bool* - True if the tile is empty, False otherwise
         '''
+
         if not self.piece_present():
             return True
+
 
     def moveable_square(self, color):
         '''
@@ -1116,6 +1187,7 @@ class Tile:
         **Returns**
             # *bool* - True if an enemy piece is present, False otherwise
         '''
+
         return self.piece_present() and self.piece.color != color
     
 
@@ -1127,6 +1199,7 @@ class Tile:
         **Returns**
             # *bool* - True if a friendly piece is present, False otherwise
         '''
+
         return self.piece_present() and self.piece.color == color
 
 
@@ -1139,11 +1212,13 @@ class Tile:
         **Returns**
             # *bool* - True if the position is on the board, False otherwise
         '''
+
         for arg in args:
             if arg < 0 or arg > 7:
                 return False
         return True
     
+
     @staticmethod
     def get_col_lett(col):
         '''
@@ -1153,6 +1228,7 @@ class Tile:
         **Returns**
             # *str*, the column letter
         '''
+
         return Tile.COL_LETT[col]
 
 
@@ -1160,8 +1236,24 @@ class Board:
     '''
     This class represents the board
     **Attributes**
-        # tiles: a 2D list of tile objects
-        # state: the state of the board that uses FEN notation to represent the board
+        # tiles: *list*, a 2D list of Tile objects
+        # state: *str*, the state of the board (in play, checkmate, stalemate)
+        # tensor: *torch tensor*, a tensor representation of the board
+        # white_moves: *list*, a list of all possible white moves
+        # white_moves_extra: *list*, a list of all possible white moves (including castling)
+        # white_moves_bot: *list*, a list of all possible white moves (including castling and en passant)
+        # white_moves_len: *int*, the length of the white_moves list
+        # black_moves: *list*, a list of all possible black moves
+        # black_moves_extra: *list*, a list of all possible black moves (including castling)
+        # black_moves_bot: *list*, a list of all possible black moves (including castling and en passant)
+        # black_moves_len: *int*, the length of the black_moves list
+        # passant_tile: *Tile obj*, the tile that can be captured en passant
+        # K_castle: *bool*, True if white can castle kingside, False otherwise
+        # Q_castle: *bool*, True if white can castle queenside, False otherwise
+        # k_castle: *bool*, True if black can castle kingside, False otherwise
+        # q_castle: *bool*, True if black can castle queenside, False otherwise
+        # pawn_moved: *bool*, True if a pawn has moved, False otherwise
+        # piece_captured: *bool*, True if a piece has been captured, False otherwise
     **Methods**
         # __init__: constructor for the Board class
         # create_board: creates the board object
@@ -1212,14 +1304,17 @@ class Board:
             # none
         '''
 
+        # set the initial and final tiles
         initial = move.init_tile
         final = move.final_tile
 
+        # check to see if a piece is captured
         if self.tiles[final.row][final.col].enemy_present(piece.color):
             self.piece_captured = True
         else:
             self.piece_captured = False
 
+        # used to preset an en passant tile
         en_passant_tile = self.tiles[final.row][final.col].empty_tile()
 
         # update the board, remove the initial piece
@@ -1227,9 +1322,9 @@ class Board:
         # add the piece to the final tile
         self.tiles[final.row][final.col].piece = piece
 
-        
-
+        # methods for special pawn movements
         if isinstance(piece, Pawn):
+            # check to see if the pawn has moved
             self.pawn_moved = True
             
             # method for en passant
@@ -1273,6 +1368,8 @@ class Board:
                         final_tile = Tile(0, 5, piece.r_rook)
                         move = Move(init_tile, final_tile)
                         self.move_piece(piece.r_rook, move)
+            
+            # set FEN notations for castling
             if piece.color == 'white':
                 self.K_castle = False
                 self.Q_castle = False
@@ -1295,7 +1392,6 @@ class Board:
         # update that the piece has moved
         piece.moved = True
 
-
         # remove the valid moves
         piece.clear_moves()
 
@@ -1310,9 +1406,10 @@ class Board:
             # *bool* - True if the king is castling, False otherwise
         '''
 
-        # check to see if the king is castling
+        # check to see if the king is castling (only time king can move 2 tiles)
         return abs(initial.col - final.col) == 2
     
+
     def legal_passant(self, piece):
         '''
         Checks to see if the en passant move is legal
@@ -1324,11 +1421,13 @@ class Board:
         '''
         
         if not isinstance(piece, Pawn):
+            # leave the method if the piece is not a pawn
             return
         
         for row in range(ROWS):
             for col in range(COLS):
                 if isinstance(self.tiles[row][col].piece, Pawn):
+                    # checks to see if a piece is occupying the en passant tile
                     self.tiles[row][col].piece.en_passant = False
 
         piece.en_passant = True
@@ -1336,7 +1435,7 @@ class Board:
 
     def move_king_check(self, piece, move):
         '''
-        Checks to see if the king is in check
+        Checks to see if the king is in check by creating a board copy and moving the piece
         **Parameters**
             # piece: *Piece obj*, the piece to move
             # move: *Move obj*, the move to make
@@ -1383,9 +1482,20 @@ class Board:
         **Returns**
             # *bool*: True if the move is in the list of moves for a piece, False otherwise
         '''
+
         return move in piece.moves
-    
+
+
     def is_king_check(self, color):
+        '''
+        Function to check if the king is in check
+        **Parameters**
+            # color: *str*, the color of the king to check
+        **Returns**
+            # *bool*: True if the king is in check, False otherwise
+        '''
+
+        # check to see if white king is in check
         if color == 'white':
             self.all_valid_moves('black')
             for move in self.black_moves:
@@ -1395,6 +1505,8 @@ class Board:
                 if self.tiles[row][col].piece_present() and self.tiles[row][col].piece.name == 'king':
                     return True
             return False
+
+        # check to see if black king is in check
         if color == 'black':
             self.all_valid_moves('white')
             for move in self.white_moves:
@@ -1405,14 +1517,28 @@ class Board:
                     return True
             return False
         
+
     def is_checkmate(self, color):
+        '''
+        Function to check if the king is in checkmate
+        **Parameters**
+            # color: *str*, the color of the king to check
+        **Returns**
+            # *bool*: True if the king is in checkmate, False otherwise
+        '''
+
+        # check to see if black king is in checkmate
         if color == 'black':
             self.all_valid_moves('black')
+            # check to see if no valid moves and king is in check
             if self.black_moves == [] and self.is_king_check('black'):
                 return True
             return False
+        
+        # check to see if white king is in checkmate
         if color == 'white':
             self.all_valid_moves('white')
+            # check to see if no valid moves and king is in check
             if self.white_moves == [] and self.is_king_check('white'):
                 return True
             return False
@@ -1421,6 +1547,8 @@ class Board:
     def valid_moves(self, piece, row, col, k_check=True):
         '''
         Generates the valid moves for a piece
+        contains subfunctions:
+            # iterate_moves(directions) - iterates through the directions of a piece for pieces that move in a straight line
         **Parameters**
             # piece: *Piece obj*, the piece to move
             # row: *int*, the row of the piece
@@ -1429,7 +1557,7 @@ class Board:
         **Returns**
             # piece.moves: *lst*, the list of valid moves for a piece
         '''
-
+    
         def iterate_moves(directions):
             '''
             Iterates through the directions of a piece for pieces that move in a straight line
@@ -1438,6 +1566,7 @@ class Board:
             **Returns**
                 # none
             '''
+
             for direction in directions:
                     row_dir, col_dir = direction
                     pos_move_row = row + row_dir
@@ -1765,12 +1894,24 @@ class Board:
             # need to add check and checkmate
             # need to add stalemate
 
+
     def all_valid_moves(self, color):
+        '''
+        Finds all the valid moves for a given color
+        **Parameters**
+            color: *str*
+                The color of the pieces to find the valid moves for (white or black)
+        **Returns**
+            None
+        '''
+
+        # create empty lists for the white and black pieces
         self.white_moves = []
         self.black_moves = []
         self.white_moves_bot = []
         self.black_moves_bot = []
         
+        # iterate through the board and append valid moves to the lists
         for row, _ in enumerate(self.tiles):
             for col, tile in enumerate(self.tiles[row]):
                 if tile.piece_present() and tile.piece.color == color:
@@ -1782,6 +1923,8 @@ class Board:
                         elif color == 'black':
                             self.black_moves.append(move)
                         piece.clear_moves()
+        
+        # get the length of the list of moves
         if color == 'white':
             self.white_moves_len = len(self.white_moves)
         elif color == 'black':
@@ -1790,6 +1933,7 @@ class Board:
         self.white_moves_bot = self.white_moves.copy()
         self.black_moves_bot = self.black_moves.copy()
 
+        # max number of moves possible in a single position is 218
         if len(self.white_moves_bot) != 0 or len(self.black_moves_bot) != 0:
             while len(self.white_moves_bot) != 218 and len(self.black_moves_bot) != 218:
                 if len(self.white_moves_bot) != 0:
@@ -1851,11 +1995,6 @@ class Board:
 
         # place king on the board
         self.tiles[row_big][4] = Tile(row_big, 4, King(color))
-
-        # test pieces
-        # self.tiles[4][4] = Tile(4, 4, King('black'))
-        # self.tiles[5][5] = Tile(5, 5, Pawn('black'))
-        # self.tiles[6][6] = Tile(6, 6, Queen('black'))
 
 
 class Drag:
@@ -1999,9 +2138,38 @@ class Move:
 
         return self.init_tile == other.init_tile and self.final_tile == other.final_tile
 
+
 class ChessAI(nn.Module):
+    '''
+    Class to handle the chess AI
+    child of the nn.Module class from PyTorch
+    **Attributes**
+        conv1: *nn.Conv2d*, the first convolutional layer
+        conv2: *nn.Conv2d*, the second convolutional layer
+        conv3: *nn.Conv2d*, the third convolutional layer
+        fc1: *nn.Linear*, the first fully connected layer, using a linear activation function
+        fc2: *nn.Linear*, the second fully connected layer, using a linear activation function
+        file: *str*, the file to save the model to
+    **Methods**
+        __init__: constructor for the ChessAI class
+        forward: forward pass of the neural network
+        save_model: saves the model to a file
+        load_model: loads the model from a file
+    '''
+
     def __init__(self, model_file=None, num_actions=218):
+        '''
+        Method to initialize the ChessAI class
+        **Parameters**
+            model_file: *str*, the file to save the model to
+            num_actions: *int*, the number of actions the AI can take
+        '''
         super(ChessAI, self).__init__()
+        # initialize the layers, in_channels is 6 because there are 6 channels in the state tensor
+        # out_channels is the number of filters
+        # kernel_size is the size of the kernel
+        # padding is the amount of padding to add to the input
+        # nn.Conv2d is the convolutional layer
         self.conv1 = nn.Conv2d(in_channels=6, out_channels=32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1)
@@ -2010,67 +2178,149 @@ class ChessAI(nn.Module):
 
         self.file = model_file
 
+
     def forward(self, state_tensor, num_moves):
+        '''
+        Method to perform a forward pass of the neural network
+        **Parameters**
+            state_tensor: *torch.Tensor*, the state tensor of the board
+            num_moves: *int*, the number of possible moves
+        **Returns**
+            *torch.Tensor*, the output tensor of the neural network
+        '''
+
         state_tensor = state_tensor.unsqueeze(0)
+        # use the ReLU activation function for the convolutional layers
         state_tensor = F.relu(self.conv1(state_tensor))
         state_tensor = F.relu(self.conv2(state_tensor))
         state_tensor = F.relu(self.conv3(state_tensor))
+
+        # flatten the tensor
         state_tensor = state_tensor.view(-1, 128 * 8 * 8)
+
+        # use the ReLU activation function for the fully connected layers
         state_tensor = F.relu(self.fc1(state_tensor))
         state_tensor = self.fc2(state_tensor)
 
         # Resize output tensor to match the number of possible moves
         state_tensor = state_tensor[:, :num_moves]
 
+        # Return softmax of output tensor
         return F.softmax(state_tensor, dim=1)
     
+
     def save_model(self):
+        '''
+        Function to save the model to a file
+        **Parameters**
+            None
+        **Returns**
+            None
+        '''
         return torch.save(self.state_dict(), 'ChessAI.pt')
 
+
     def load_model(self):
+        '''
+        Funcion to load the model from a file
+        **Parameters**
+            None
+        **Returns**
+            None
+        '''
+
         return self.load_state_dict(torch.load('ChessAI.pt'))
     
+
 class ChessAgent():
+    '''
+    Class to handle the chess agent, which uses the ChessAI class
+    **Attributes**
+        model: *ChessAI*, the model to use
+        optimizer: *optim.Adam*, the optimizer to use
+        gamma: *float*, the discount factor
+    **Methods**
+        __init__: constructor for the ChessAgent class
+        select_action: selects an action to take
+        update_model: updates the model
+    '''
+
     def __init__(self, model, learning_rate=0.001, gamma=0.99):
+        '''
+        Constructor for the ChessAgent class
+        **Parameters**
+            model: *ChessAI*, the model to use
+            learning_rate: *float*, the learning rate to use
+            gamma: *float*, the discount factor
+        **Returns**
+            None
+        '''
+
         self.model = model
+        # use the Adam optimizer
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.gamma = gamma
-
-    # def select_action(self, state_tensor, num_moves):
-    #     probs = self.model.forward(state_tensor, num_moves)
-    #     action = torch.multinomial(probs, 1).item()
-    #     state_value = probs[0, action]
-    #     return action, state_value
     
-    # def select_action(self, state_tensor, num_moves, temperature=15.0):
-    #     probs = self.model.forward(state_tensor, num_moves)
-    #     scaled_probs = torch.exp(torch.log(probs) / temperature)
-    #     scaled_probs /= torch.sum(scaled_probs)
 
-    #     action = torch.multinomial(scaled_probs, 1).item()
-    #     state_value = probs[0, action]
-    #     return action, state_value
-    
     def select_action(self, state_tensor, num_moves, noise_scale=0.0):
+        '''
+        Method to select an action to take
+        **Parameters**
+            state_tensor: *torch.Tensor*, the state tensor of the board
+            num_moves: *int*, the number of possible moves
+            noise_scale: *float*, the amount of noise to add to the action
+        **Returns**
+            action: *int*, the action to take
+            state_value: *torch.Tensor*, the state value of the board
+        '''
+
+        # get the logits and add noise
+        # logits are the output of the neural network before the softmax activation function
+        # noise is used to add some randomness to the action
         logits = self.model.forward(state_tensor, num_moves)
         noise = noise_scale * torch.randn_like(logits)
+
+        # get the action and state value
+        # the action is the index of the maximum value of the logits
+        # the state value is the softmax of the logits
         probs = F.softmax(logits + noise, dim=-1)
         action = torch.multinomial(probs, 1).item()
         state_value = probs[0, action]
         return action, state_value
 
+
     def update_model(self, state_value, reward, next_state_tensor, next_num_moves, gameover):
+        '''
+        Method to update the model following each action
+        **Parameters**
+            state_value: *torch.Tensor*, the state value of the board
+            reward: *float*, the reward for the action
+            next_state_tensor: *torch.Tensor*, the state tensor of the next board
+            next_num_moves: *int*, the number of possible moves for the next board
+            gameover: *bool*, whether the game is over
+        **Returns**
+            None
+        '''
+
+        # set the gradients to zero
+        # gradients are used to update the weights of the neural network
         self.optimizer.zero_grad()
 
+        # calculate the next state value
         next_state_value = torch.zeros(1, 1)
+        
+        # use the model to get the next state value if the game is not over
         if not gameover:
             next_state_value = self.model.forward(next_state_tensor, next_num_moves).max(1)[0].detach().unsqueeze(1)
         expected_state_value = reward + self.gamma * next_state_value
         loss = (state_value - expected_state_value).pow(2).mean()
         
+        # backpropagate the loss
+        # backpropagation is used to update the weights of the neural network
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
 
 if __name__ == '__main__':
 
