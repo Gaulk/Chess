@@ -7,13 +7,42 @@ Chess is a game that has 64 squares, where each color has 16 pieces, white and b
 ## 2. Requirements
 Please see the requirements.txt file to ensure your environment is set up correctly.
 
-Note: the AI has been trained in stockfish using a .exe file that can only be run on a PC.
+<strong>Note: the AI has been trained in stockfish using a .exe file that can only be run on a Windows OS environment.</strong>
 
 Running the main file (as described below), will run in game mode automatically. Instructions below describe changing to training mode.
 
+## 3. Installation
+
+1. Clone this repository to your local machine.
+
+```sh
+git clone https://github.com/Gaulk/Chess.git
+```
+
+2. Change the directory to the project folder.
+
+3. Create a virtual environment and activate it.
+
+```sh
+python -m venv venv
+source venv/bin/activate
+```
+
+4. Install the required packages.
+
+```sh
+pip install -r requirements.txt
+```
+
 ## 3. Starting the game
 To run the game you have to run the Chess.py file. Inside this file all lines beside the .train() must be uncommented.
-![image](https://user-images.githubusercontent.com/121264060/236707930-95f72866-8521-46d0-90c8-a72682f06eec.png)
+```py
+if __name__ == '__main__':
+    type_of_game = input("What type of game? PVP or Bot: ")
+    Chess_App = Chess_App()
+    Chess_App.run(type_of_game)
+    # Chess_App.train() 
+ ```
 
 Once this runs there will be a message in the terminal. Type either "PVP" or "Bot" depending on the mode you wish to play.
 ![image](https://user-images.githubusercontent.com/121264060/236708017-5f7187a5-35f6-4060-a721-0a04fb0721e0.png)
