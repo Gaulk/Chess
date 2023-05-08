@@ -38,17 +38,37 @@ pip install -r requirements.txt
 To run the game you have to run the Chess.py file. Inside this file all lines beside the .train() must be uncommented.
 ```py
 if __name__ == '__main__':
-    type_of_game = input("What type of game? PVP or Bot: ")
-    Chess_App = Chess_App()
-    Chess_App.run(type_of_game)
-    # Chess_App.train() 
+    train_or_play = input("Train or Play: ")
+    if train_or_play == "Play":
+        type_of_game = input("What type of game? PVP or Bot: ")
+        Chess_App = Chess_App()
+        Chess_App.run(type_of_game)
+    else:
+        # assert that the OS is Windows
+        if (platform.system() != 'Windows'):
+            print("ATTENTION: This model was trained on Windows, so it can only be trained in a Windows Environment")
+        else:
+            Chess_App = Chess_App()
+            Chess_App.train()
  ```
 
-Once this runs there will be a message in the terminal. Type either "PVP" or "Bot" depending on the mode you wish to play.
-![image](https://user-images.githubusercontent.com/121264060/236708017-5f7187a5-35f6-4060-a721-0a04fb0721e0.png)
+Once this runs there will be a message in the terminal:
+```
+Hello from the pygame community. https://www.pygame.org/contribute.html
+Train or Play:
+```
 
-If you wish to train the bot uncomment the train() function and comment out the run() function and the input() function.
-![image](https://user-images.githubusercontent.com/121264060/236708064-9353d5c0-050f-4568-a4eb-e3b1f90122a7.png)
+Type ```Play``` to start the main game mode.
+
+You will be prompted with the following:
+
+```What type of game? PVP or Bot:```
+
+Type ```PVP``` if you wish to play against a friend.
+Type ```Bot``` if you wish to play against our reinforcement ML trained bot.
+
+If you wish to train the bot Type ```Train``` at the first user input. 
+NOTE: this function will only be available if you are running a Windows environment.
 
 ## 3. Gameplay
 ### Playing the Game
