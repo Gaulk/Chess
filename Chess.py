@@ -207,6 +207,18 @@ class Chess_App:
 
                 # sets events within the game
                 for event in pygame.event.get():
+                    # if 'r' is pressed, reset the game
+                    if event.type == pygame.KEYDOWN and game.endgame:
+                        if event.key == pygame.K_r:
+                            game.reset_game()
+                            game = self.game
+                            board = self.game.board
+                            drag = self.game.drag
+                    
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        sys.exit()
+
                     if game.player_color == 'white':
                         # allows for clicks
                         if event.type == pygame.MOUSEBUTTONDOWN and not game.endgame:
@@ -276,7 +288,7 @@ class Chess_App:
 
                             drag.drop_piece()
 
-                            # if 'r' is pressed, reset the game
+                        # if 'r' is pressed, reset the game
                         elif event.type == pygame.KEYDOWN:
                             if event.key == pygame.K_r:
                                 game.reset_game()
@@ -506,7 +518,7 @@ class Game:
             # none
         '''
         # Change this if stockfish is somewhere else
-        engine = chess.engine.SimpleEngine.popen_uci("C:/Users/cgaul/Desktop/CBID 2022-2023/Software Carpentry/Chess/Chess/stockfish_15.1_win_x64_avx2/stockfish-windows-2022-x86-64-avx2.exe")
+        engine = chess.engine.SimpleEngine.popen_uci("stockfish_15.1_win_x64_popcnt/stockfish-windows-2022-x86-64-modern.exe")
 
         # The position represented in FEN
         # board = chess.Board("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
@@ -546,35 +558,30 @@ class Game:
                 rect = (col * TILE, row * TILE, TILE, TILE)
                 pygame.draw.rect(surface, color, rect)
                 
-                # draw row label
-                row_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
 
-                # draw labels on left side of board for the rows and columns
-                if col == 0:
-                    # make light grey font for dark brown tiles, dark grey font for light brown tiles
-                    if row % 2 == 0:
-                        color = (128, 128, 128) # dark grey
-                    else:
-                        color = (192, 192, 192) # light grey
-                    # create label
-                    row_lbl = row_lbl_font.render(str(ROWS - row), True, color)
-                    row_lbl_pos = (5, 5 + row * TILE)
-                    # draw lab
-                    surface.blit(row_lbl, row_lbl_pos)
+                ## Creating a label
+                # # draw row label
+                # row_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
 
-                # draw column label
-                col_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
-                # make light grey font for dark brown tiles, dark grey font for light brown tiles
-                if row == 7:
-                    if col % 2 == 0:
-                        color = (192, 192, 192)
-                    else:
-                        color = (128, 128, 128)
-                    # create label
-                    col_lbl = col_lbl_font.render(Tile.get_col_lett(col), True, color)
-                    col_lbl_pos = (col * TILE + TILE - 20, HEIGHT - 20)
-                    # draw label
-                    surface.blit(col_lbl, col_lbl_pos)
+                # if col == 0:
+                #     # make light grey font for dark brown tiles, dark grey font for light brown tiles
+                #     color = (0, 0, 0)
+                #     # create label
+                #     row_lbl = row_lbl_font.render(str(ROWS - row), True, color)
+                #     row_lbl_pos = (5, 5 + row * TILE)
+                #     # draw lab
+                #     surface.blit(row_lbl, row_lbl_pos)
+
+                # # draw column label
+                # col_lbl_font = pygame.font.SysFont('freesansbold.ttf', 20)
+                # # make light grey font for dark brown tiles, dark grey font for light brown tiles
+                # if row == 7:
+                #     color = (0, 0, 0)
+                #     # create label
+                #     col_lbl = col_lbl_font.render(Tile.get_col_lett(col), True, color)
+                #     col_lbl_pos = (col * TILE + TILE - 20, HEIGHT - 20)
+                #     # draw label
+                #     surface.blit(col_lbl, col_lbl_pos)
 
 
     def show_endgame(self, surface):
@@ -1100,14 +1107,14 @@ class Tile:
     '''
 
     # dictionary of column letters
-    COL_LETT = {0: 'A', 
-                1: 'B', 
-                2: 'C', 
-                3: 'D', 
-                4: 'E',
-                5: 'F',
-                6: 'G',
-                7: 'H'
+    COL_LETT = {0: 'a', 
+                1: 'b', 
+                2: 'c', 
+                3: 'd', 
+                4: 'e',
+                5: 'f',
+                6: 'g',
+                7: 'h'
                 }
 
     def __init__(self, row, col, piece=None):
@@ -2324,7 +2331,7 @@ class ChessAgent():
 
 if __name__ == '__main__':
 
-    type_of_game = input("What type of game? PVP or Bot: ")
+    # type_of_game = input("What type of game? PVP or Bot: ")
     Chess_App = Chess_App()
-    Chess_App.run(type_of_game)
-    # Chess_App.train()
+    # Chess_App.run(type_of_game)
+    Chess_App.train()
