@@ -20,6 +20,53 @@ The following classes are included:
     # ChessAI - represents the AI
     # ChessAgent - represents the agent
     # Move - represents a move
+
+    Updates to make:
+        Priority of updates:
+        1. Break code into different files
+            a. Organize Github
+                i. Add folders into the tree
+            b. Game/GUI
+            c. Setting up the board
+                i. Piece architecture
+                ii. Board itself
+            d. Moving pieces
+            e. Finding legal moves and calculating check
+            f. Create FEN
+                i. Use this to pass the position between files
+                    a. Ehh maybe on this, other files would just have the functions
+                        Could reference/call them
+        2. Re-do how finding legal moves works
+            a. make check function work on current game board.
+                Then try a move and check if in "check"
+            b. Don't need to re-calculate all legal moves each time.
+                Only certain moves changes when 1 piece moves
+                Create running list of moves essentially.
+                i. When recalculating, recalculate these
+                    a. Piece that moved
+                    b. If that piece moved into a tile that was a legal move
+                        i. Need to update other pieces, can only go up to this move
+                        ii. Potentially to make simpler recalculate if affected
+                        iii. Need to consider if a piece moves, it could open up
+                            pieces behind it to have more legal moves, 
+                            would need to calculate this
+        3. Create easier to use GUI (app for iOS and android?)
+            a. Make it look modern
+                i. Use a library that can be used on android and iOS
+                ii. Looks fire
+            b. Will have the ability to control all things from GUI
+                i. Which color to play
+                ii. If playing bot or person
+                iii. Create profiles? Log what your record/rating is?
+                iv. Highlight the previous move
+        4. Make into a Docker thing
+            a. This will allow to be packaged and easily used by someone else... Khaleezy
+        4. Update Bot, train better
+            a. Need to create better scoring system
+        5. Add functionality to export the current position
+            a. This will be useful to when trying to interface with the in person board
+            b. Add ability to intake a position from the board, and move a piece accordingly
+        
 '''
 
 import os
@@ -284,6 +331,15 @@ class Chess_App:
 
                                     game.change_turn()
                                     game.counter(self.game.count)
+
+                                    # Get FEN
+                                    game.get_state()
+                                    state = game.board.state
+                                    print(state)
+                                    # Calculate reward
+                                    # relative, always positive if good for that color
+                                    game.get_centipawn(state)
+                                    print(game.centipawn)
 
                                     game.is_gameover()
                                     if game.gameover != None:
